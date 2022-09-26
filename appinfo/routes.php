@@ -20,7 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
+if(!\OC::$server->getSession()->get('oldUserId'))		
 return [
 	'routes' => [
 		[
