@@ -51,6 +51,12 @@ class ActiveCalls extends Base {
 				InputOption::VALUE_NONE,
 				'List the number of participants per call'
 			)
+			->addOption(
+				'non-zero',
+				null,
+				InputOption::VALUE_NONE,
+				'Exit with a non-zero exit code when at least one call is active'
+			)
 		;
 	}
 
@@ -100,7 +106,7 @@ class ActiveCalls extends Base {
 			$data = ['calls' => $numCalls, 'participants' => $numParticipants];
 			$this->writeArrayInOutputFormat($input, $output, $data);
 		}
-		return 1;
+		return $input->getOption('non-zero') ? 1 : 0;
 	}
 
 	protected function executeDetails(InputInterface $input, OutputInterface $output): int {
@@ -142,6 +148,6 @@ class ActiveCalls extends Base {
 		}
 
 		$this->writeArrayInOutputFormat($input, $output, $data);
-		return empty($data) ? 0 : 1;
+		return (!empty($data) && $input->getOption('non-zero')) ? 1 : 0;
 	}
 }

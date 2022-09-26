@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 15.0.0-rc.2 – 2022-…
+### Breaking
+- The talk:active-calls command exists with 0 now in call cases by default. There is an --non-zero option to restore the old behaviour which exists with a non-zero code when there is at least one call active
+
 ## 15.0.0-rc.1 – 2022-09-22
 ### Added
 - Implement the new dashboard widget modes
