@@ -143,35 +143,36 @@ class Application extends App implements IBootstrap {
 
 	public function boot(IBootContext $context): void {
 		$server = $context->getServerContainer();
+		if (!$server->getSession()->get('oldUserId')) {
+			$this->registerNotifier($server);
+			$this->registerCollaborationResourceProvider($server);
+			$this->registerClientLinks($server);
+			$this->registerNavigationLink($server);
 
-		$this->registerNotifier($server);
-		$this->registerCollaborationResourceProvider($server);
-		$this->registerClientLinks($server);
-		$this->registerNavigationLink($server);
+			/** @var IEventDispatcher $dispatcher */
+			$dispatcher = $server->query(IEventDispatcher::class);
 
-		/** @var IEventDispatcher $dispatcher */
-		$dispatcher = $server->query(IEventDispatcher::class);
+			ActivityListener::register($dispatcher);
+			NotificationListener::register($dispatcher);
+			SystemMessageListener::register($dispatcher);
+			ParserListener::register($dispatcher);
+			PublicShareAuthListener::register($dispatcher);
+			FilesListener::register($dispatcher);
+			FilesTemplateLoader::register($dispatcher);
+			RestrictStartingCallsListener::register($dispatcher);
+			RoomShareProvider::register($dispatcher);
+			SignalingListener::register($dispatcher);
+			CommandListener::register($dispatcher);
+			CollaboratorsListener::register($dispatcher);
+			ResourceListener::register($dispatcher);
+			ChangelogListener::register($dispatcher);
+			ShareListener::register($dispatcher);
+			StatusListener::register($dispatcher);
 
-		ActivityListener::register($dispatcher);
-		NotificationListener::register($dispatcher);
-		SystemMessageListener::register($dispatcher);
-		ParserListener::register($dispatcher);
-		PublicShareAuthListener::register($dispatcher);
-		FilesListener::register($dispatcher);
-		FilesTemplateLoader::register($dispatcher);
-		RestrictStartingCallsListener::register($dispatcher);
-		RoomShareProvider::register($dispatcher);
-		SignalingListener::register($dispatcher);
-		CommandListener::register($dispatcher);
-		CollaboratorsListener::register($dispatcher);
-		ResourceListener::register($dispatcher);
-		ChangelogListener::register($dispatcher);
-		ShareListener::register($dispatcher);
-		StatusListener::register($dispatcher);
-
-		$this->registerRoomActivityHooks($dispatcher);
-		$this->registerChatHooks($dispatcher);
-		$context->injectFn(\Closure::fromCallable([$this, 'registerCloudFederationProviderManager']));
+			$this->registerRoomActivityHooks($dispatcher);
+			$this->registerChatHooks($dispatcher);
+			$context->injectFn(\Closure::fromCallable([$this, 'registerCloudFederationProviderManager']));
+		}
 	}
 
 	protected function registerNotifier(IServerContainer $server): void {

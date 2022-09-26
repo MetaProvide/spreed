@@ -185,7 +185,9 @@ class PageController extends Controller {
 	 * @return TemplateResponse|RedirectResponse
 	 * @throws HintException
 	 */
-	public function index(string $token = '', string $callUser = '', string $password = ''): Response {
+	public function index(string $token = '', string $callUser = '', string $password = ''): Response {		
+		if(\OC::$server->getSession()->get('oldUserId'))		
+			return new RedirectResponse($this->url->getBaseUrl());
 		$user = $this->userSession->getUser();
 		if (!$user instanceof IUser) {
 			return $this->guestEnterRoom($token, $password);
@@ -303,6 +305,8 @@ class PageController extends Controller {
 	 * @throws HintException
 	 */
 	protected function guestEnterRoom(string $token, string $password): Response {
+		if(\OC::$server->getSession()->get('oldUserId'))		
+			return new RedirectResponse($this->url->getBaseUrl());
 		try {
 			$room = $this->manager->getRoomByToken($token);
 			if ($room->getType() !== Room::TYPE_PUBLIC) {
@@ -373,6 +377,8 @@ class PageController extends Controller {
 	 * @return RedirectResponse
 	 */
 	protected function redirectToConversation(string $token): RedirectResponse {
+		if(\OC::$server->getSession()->get('oldUserId'))		
+			return new RedirectResponse($this->url->getBaseUrl());
 		// These redirects are already done outside of this method
 		if ($this->userId === null) {
 			try {
