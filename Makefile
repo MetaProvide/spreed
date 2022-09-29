@@ -1,24 +1,35 @@
 # Makefile for building the project
 
 app_name=spreed
+app_id=spreed
+build_directory=$(CURDIR)/build
+temp_build_directory=$(build_directory)/temp
+build_tools_directory=$(CURDIR)/build/tools
 
-project_dir=$(CURDIR)/../$(app_name)
-build_dir=$(CURDIR)/build/artifacts
-appstore_dir=$(build_dir)/appstore
-source_dir=$(build_dir)/source
-sign_dir=$(build_dir)/sign
-package_name=$(app_name)
-cert_dir=$(HOME)/.nextcloud/certificates
-version+=master
+all: dev-setup lint build-js-production
 
-all: dev-setup build-js-production
+release: npm-init build-js-production build-tarball
+# Dev env management
+dev-setup: clean clean-dev composer npm-init
 
-dev-setup: clean-dev npm-init
+lint: eslint stylelint php-cs
 
-dependabot: dev-setup npm-update build-js-production
+lint-fix: eslint-fix stylelint-fix php-cs-fix
 
-release: appstore create-tag
+# Dependencies
+composer:
+	composer install --prefer-dist
 
+composer-update:
+	composer update --prefer-dist
+
+npm-init:
+	npm ci
+
+npm-update:
+	npm update
+
+# Building
 build-js:
 	npm run dev
 
@@ -28,77 +39,74 @@ build-js-production:
 watch-js:
 	npm run watch
 
-test:
-	npm run test:unit
+serve-js:
+	npm run serve
 
-lint:
-	npm run lint
+# Linting
+eslint:
+	npm run eslint
 
-lint-fix:
-	npm run lint:fix
+eslint-fix:
+	npm run eslint:fix
 
-npm-init:
-	npm ci
+# Style linting
+stylelint:
+	npm run stylelint
 
-npm-update:
-	npm update
+stylelint-fix:
+	npm run stylelint:fix
 
+# PHP CS Fixer
+php-cs:
+	vendor/bin/php-cs-fixer fix -v --dry-run
+
+php-cs-fix:
+	vendor/bin/php-cs-fixer fix -v
+
+# Cleaning
 clean:
 	rm -rf js/*
-	rm -rf $(build_dir)
 
-clean-dev: clean
+clean-dev:
 	rm -rf node_modules
 
-create-tag:
-	git tag -a v$(version) -m "Tagging the $(version) release."
-	git push origin v$(version)
-
-appstore:
-	rm -rf $(build_dir)
-	mkdir -p $(sign_dir)
+build-tarball:
+	rm -rf $(build_directory)
+	mkdir -p $(temp_build_directory)
 	rsync -a \
-	--exclude=babel.config.js \
-	--exclude=/build \
-	--exclude=composer.json \
-	--exclude=composer.lock \
-	--exclude=docs \
-	--exclude=.drone.yml \
-	--exclude=.eslintignore \
-	--exclude=.eslintrc.js \
-	--exclude=.git \
-	--exclude=.gitattributes \
-	--exclude=.github \
-	--exclude=.gitignore \
-	--exclude=jest.config.js \
-	--exclude=.l10nignore \
-	--exclude=mkdocs.yml \
-	--exclude=Makefile \
-	--exclude=node_modules \
-	--exclude=package.json \
-	--exclude=package-lock.json \
-	--exclude=.php_cs.dist \
-	--exclude=.php_cs.cache \
-	--exclude=psalm.xml \
-	--exclude=README.md \
-	--exclude=src \
-	--exclude=.stylelintignore \
-	--exclude=stylelint.config.js \
-	--exclude=.tx \
-	--exclude=tests \
-	--exclude=vendor \
-	--exclude=webpack.js \
-	$(project_dir)/  $(sign_dir)/$(app_name)
-	@if [ -f $(cert_dir)/$(app_name).key ]; then \
-		echo "Signing app files…"; \
-		php ../../occ integrity:sign-app \
-			--privateKey=$(cert_dir)/$(app_name).key\
-			--certificate=$(cert_dir)/$(app_name).crt\
-			--path=$(sign_dir)/$(app_name); \
-	fi
-	tar -czf $(build_dir)/$(app_name).tar.gz \
-		-C $(sign_dir) $(app_name)
-	@if [ -f $(cert_dir)/$(app_name).key ]; then \
-		echo "Signing package…"; \
-		openssl dgst -sha512 -sign $(cert_dir)/$(app_name).key $(build_dir)/$(app_name).tar.gz | openssl base64; \
-	fi
+	--exclude=".git" \
+	--exclude=".github" \
+	--exclude=".tx" \
+	--exclude=".vscode" \
+	--exclude="build" \
+	--exclude="docs" \
+	--exclude="node_modules" \
+	--exclude="src" \
+	--exclude="tests" \
+	--exclude="vendor" \
+	--exclude=".drone.yml" \
+	--exclude=".editorconfig" \
+	--exclude=".eslintignore" \
+	--exclude=".eslintrc.js" \
+	--exclude=".gitattributes" \
+	--exclude=".gitignore" \
+	--exclude=".l10nignore" \
+	--exclude=".php_cs.cache" \
+	--exclude=".php-cs-fixer.dist.php" \
+	--exclude=".prettierrc" \
+	--exclude=".stylelintignore" \
+	--exclude=".stylelintrc.json" \
+	--exclude="babel.config.js" \
+	--exclude="composer.json" \
+	--exclude="composer.lock" \
+	--exclude="jest.config.js" \
+	--exclude="Makefile" \
+	--exclude="mkdocs.yml" \
+	--exclude="package-lock.json" \
+	--exclude="package.json" \
+	--exclude="psalm.xml" \
+	--exclude="stylelint.config.js" \
+	--exclude="webpack.js" \
+	../$(app_name)/ $(temp_build_directory)/$(app_id)
+	tar czf $(build_directory)/$(app_name).tar.gz \
+		-C $(temp_build_directory) $(app_id)

@@ -11,8 +11,8 @@
 		"test:unit": "TZ=UTC vue-cli-service test:unit",
 		"test:coverage": "TZ=UTC vue-cli-service test:unit --coverage",
 		"test:watch": "TZ=UTC vue-cli-service test:unit --watchAll",
-		"lint": "eslint --ext .js,.vue src",
-		"lint:fix": "eslint --ext .js,.vue src --fix",
+		"eslint": "eslint --ext .js,.vue src",
+		"eslint:fix": "eslint --ext .js,.vue src --fix",
 		"stylelint": "stylelint css/*.css css/*.scss src/**/*.scss src/**/*.vue",
 		"stylelint:fix": "stylelint css/*.css css/*.scss src/**/*.scss src/**/*.vue --fix"
 	},
