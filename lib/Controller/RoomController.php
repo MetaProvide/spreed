@@ -810,6 +810,9 @@ class RoomController extends AEnvironmentAwareController {
 		// Create the room
 		try {
 			$room = $this->roomService->createConversation($roomType, $roomName, $currentUser);
+			$participant = $this->participantService->getSessionsAndParticipantsForRoom($room)[0];
+			$this->setParticipant($participant);
+			$this->setNotificationLevel(1);
 		} catch (InvalidArgumentException $e) {
 			return new DataResponse([], Http::STATUS_BAD_REQUEST);
 		}
