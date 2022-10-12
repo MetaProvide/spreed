@@ -43,21 +43,7 @@
 					disable-picture-in-picture="true"
 					tabindex="-1" />
 				<div v-show="!showVideo"
-					class="preview__novideo">
-					<VideoBackground
-						:display-name="displayName"
-						:user="userId" />
-					<Avatar v-if="userId"
-						:size="128"
-						:disable-menu="true"
-						:disable-tooltip="true"
-						:show-user-status="false"
-						:user="userId"
-						:display-name="displayName" />
-					<div v-if="!userId"
-						class="avatar avatar-128px guest">
-						{{ firstLetterOfGuestName }}
-					</div>
+					class="preview__novideo">	
 				</div>
 			</div>
 
@@ -181,8 +167,6 @@ import Modal from '@nextcloud/vue/dist/Components/Modal'
 import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip'
 import { devices } from '../../mixins/devices'
 import MediaDevicesSelector from '../MediaDevicesSelector.vue'
-import VideoBackground from '../CallView/shared/VideoBackground.vue'
-import Avatar from '@nextcloud/vue/dist/Components/Avatar'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import Microphone from 'vue-material-design-icons/Microphone'
 import MicrophoneOff from 'vue-material-design-icons/MicrophoneOff'
@@ -207,8 +191,6 @@ export default {
 	components: {
 		Modal,
 		MediaDevicesSelector,
-		VideoBackground,
-		Avatar,
 		Cog,
 		Microphone,
 		MicrophoneOff,
@@ -491,5 +473,16 @@ export default {
 	padding-inline: 1rem !important;
 	background-color: white;
     border: none;
+}
+
+.preview__novideo{
+	height: 100%;
+	background-image: url("../../../img/user.svg");
+	background-position: center;
+	background-repeat: no-repeat;
+}
+
+.device-checker__preview{
+	background-color: #9195EA4D !important;
 }
 </style>
