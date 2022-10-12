@@ -25,6 +25,12 @@
 		size="large"
 		@close="closeModal">
 		<div class="device-checker">
+			<div class="modal-header">
+				<button
+					class="adminly-close-button"
+					@click="closeModal"
+				/></button>
+			</div>
 			<h2 class="device-checker__title">
 				{{ t('spreed', 'Camera and microphone check') }}
 			</h2>
@@ -471,5 +477,19 @@ export default {
 
 ::v-deep .modal-container {
 	display: flex !important;
+}
+
+.modal-header{
+	display: flex;
+}
+
+.adminly-close-button {
+	margin-left: auto;
+	background-image: url("../../../img/close.svg");
+	background-position: center;
+	background-repeat: no-repeat;
+	padding-inline: 1rem !important;
+	background-color: white;
+    border: none;
 }
 </style>
