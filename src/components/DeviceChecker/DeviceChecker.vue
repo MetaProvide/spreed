@@ -28,8 +28,7 @@
 			<div class="modal-header">
 				<button
 					class="adminly-close-button"
-					@click="closeModal"
-				/></button>
+					@click="closeModal" /></button>
 			</div>
 			<h2 class="device-checker__title">
 				{{ t('spreed', 'Camera and microphone check') }}
@@ -43,8 +42,7 @@
 					disable-picture-in-picture="true"
 					tabindex="-1" />
 				<div v-show="!showVideo"
-					class="preview__novideo">	
-				</div>
+					class="preview__novideo" />
 			</div>
 
 			<!--
@@ -484,5 +482,41 @@ export default {
 
 .device-checker__preview{
 	background-color: #9195EA4D !important;
+}
+
+.material-design-icon svg {
+	color: transparent;
+	width: 30px;
+	height: 30px;
+}
+
+.material-design-icon {
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: contain;
+}
+
+.microphone-icon svg{
+	background-image: url('../../../img/adminly-microphone.svg');
+}
+
+.microphone-off-icon svg{
+	background-image: url('../../../img/adminly-microphone-mute.svg');
+}
+
+.video-icon svg{
+	background-image: url('../../../img/adminly-video.svg');
+}
+
+.video-off-icon svg{
+	background-image: url('../../../img/adminly-video-disabled.svg');
+}
+
+.blur-icon svg{
+	background-image: url('../../../img/adminly-background-blur.svg');
+}
+
+.blur-off-icon svg{
+	background-image: url('../../../img/adminly-background-blur-off.svg');
 }
 </style>
