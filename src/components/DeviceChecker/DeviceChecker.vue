@@ -420,6 +420,7 @@ export default {
 	justify-content: center;
 	background: none;
 	border: none;
+	box-shadow: none;
 	padding: 0;
 	margin: auto;
 	&__icon {
@@ -470,6 +471,7 @@ export default {
 	background-repeat: no-repeat;
 	padding-inline: 1rem !important;
 	background-color: white;
+	box-shadow: none;
     border: none;
 }
 
@@ -482,6 +484,22 @@ export default {
 
 .device-checker__preview{
 	background-color: #9195EA4D !important;
+	width: 300px !important;
+	height: 200px !important;
+	margin: 1.5rem;
+}
+
+.call-button{
+	padding-block: 1rem;
+}
+
+.device-checker__title{
+	color: var(--color-main-text);
+}
+
+.device-checker__device-selection{
+	padding-bottom: 1rem;
+    padding-top: 1.5rem;
 }
 
 .material-design-icon svg {
@@ -518,5 +536,11 @@ export default {
 
 .blur-off-icon svg{
 	background-image: url('../../../img/adminly-background-blur-off.svg');
+}
+
+.cog-icon svg{
+	background-repeat: no-repeat;
+	width: 31px;
+	background-image: url('../../../img/adminly-devices.svg');
 }
 </style>
