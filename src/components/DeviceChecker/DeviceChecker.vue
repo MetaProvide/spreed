@@ -402,7 +402,6 @@ export default {
 	&__video {
 		max-width: 100%;
 		object-fit: contain;
-		max-height: 100%;
 	}
 
 	&__novideo {
