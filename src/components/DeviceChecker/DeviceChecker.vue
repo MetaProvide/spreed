@@ -484,9 +484,6 @@ export default {
 
 .device-checker__preview{
 	background-color: #9195EA4D !important;
-	width: 300px !important;
-	height: 200px !important;
-	margin: 1.5rem;
 }
 
 .call-button{
