@@ -352,4 +352,8 @@ export default {
 		margin: 0 8px;
 	}
 }
+
+.icon-start-call{
+	opacity: 1 !important;
+}
 </style>

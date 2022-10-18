@@ -25,6 +25,11 @@
 		size="large"
 		@close="closeModal">
 		<div class="device-checker">
+			<div class="modal-header">
+				<button
+					class="adminly-close-button"
+					@click="closeModal" /></button>
+			</div>
 			<h2 class="device-checker__title">
 				{{ t('spreed', 'Camera and microphone check') }}
 			</h2>
@@ -37,22 +42,7 @@
 					disable-picture-in-picture="true"
 					tabindex="-1" />
 				<div v-show="!showVideo"
-					class="preview__novideo">
-					<VideoBackground
-						:display-name="displayName"
-						:user="userId" />
-					<Avatar v-if="userId"
-						:size="128"
-						:disable-menu="true"
-						:disable-tooltip="true"
-						:show-user-status="false"
-						:user="userId"
-						:display-name="displayName" />
-					<div v-if="!userId"
-						class="avatar avatar-128px guest">
-						{{ firstLetterOfGuestName }}
-					</div>
-				</div>
+					class="preview__novideo" />
 			</div>
 
 			<!--
@@ -175,8 +165,6 @@ import Modal from '@nextcloud/vue/dist/Components/Modal'
 import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip'
 import { devices } from '../../mixins/devices'
 import MediaDevicesSelector from '../MediaDevicesSelector.vue'
-import VideoBackground from '../CallView/shared/VideoBackground.vue'
-import Avatar from '@nextcloud/vue/dist/Components/Avatar'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import Microphone from 'vue-material-design-icons/Microphone'
 import MicrophoneOff from 'vue-material-design-icons/MicrophoneOff'
@@ -201,8 +189,6 @@ export default {
 	components: {
 		Modal,
 		MediaDevicesSelector,
-		VideoBackground,
-		Avatar,
 		Cog,
 		Microphone,
 		MicrophoneOff,
@@ -416,7 +402,6 @@ export default {
 	&__video {
 		max-width: 100%;
 		object-fit: contain;
-		max-height: 100%;
 	}
 
 	&__novideo {
@@ -434,6 +419,7 @@ export default {
 	justify-content: center;
 	background: none;
 	border: none;
+	box-shadow: none;
 	padding: 0;
 	margin: auto;
 	&__icon {
@@ -471,5 +457,88 @@ export default {
 
 ::v-deep .modal-container {
 	display: flex !important;
+}
+
+.modal-header{
+	display: flex;
+}
+
+.adminly-close-button {
+	margin-left: auto;
+	background-image: url("../../../img/close.svg");
+	background-position: center;
+	background-repeat: no-repeat;
+	padding-inline: 1rem !important;
+	background-color: white;
+	box-shadow: none;
+    border: none;
+}
+
+.preview__novideo{
+	height: 100%;
+	background-image: url("../../../img/user.svg");
+	background-position: center;
+	background-repeat: no-repeat;
+}
+
+.device-checker__preview{
+	background-color: var(--adminly-light-blue) !important;
+	height: 200px;
+	margin: 1.5rem;
+}
+
+.call-button{
+	padding-block: 1rem;
+}
+
+.device-checker__title{
+	color: var(--color-main-text);
+}
+
+.device-checker__device-selection{
+	padding-bottom: 1rem;
+    padding-top: 1.5rem;
+}
+
+.material-design-icon svg {
+	color: transparent;
+	width: 30px;
+	height: 30px;
+}
+
+.material-design-icon {
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: contain;
+}
+
+.microphone-icon svg{
+	background-image: url('../../../img/adminly-microphone.svg');
+}
+
+.microphone-off-icon svg{
+	background-image: url('../../../img/adminly-microphone-mute.svg');
+}
+
+.video-icon svg{
+	background-image: url('../../../img/adminly-video.svg');
+}
+
+.video-off-icon svg{
+	background-image: url('../../../img/adminly-video-disabled.svg');
+}
+
+.blur-icon svg{
+	background-image: url('../../../img/adminly-background-blur.svg');
+}
+
+.blur-off-icon svg{
+	background-image: url('../../../img/adminly-background-blur-off.svg');
+}
+
+.cog-icon svg{
+	background-repeat: no-repeat;
+	width: 31px;
+	background-image: url('../../../img/adminly-devices.svg');
 }
 </style>

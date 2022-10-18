@@ -86,7 +86,8 @@
 	}
 
 	.icon-start-call {
-		background-image: url(icon-color-path('video', 'actions', $color-primary-text, 1, true));
+		min-width: 26px;
+		background-image: url('../img/adminly-video-white.svg');
 	}
 
 	.icon-incoming-call {
