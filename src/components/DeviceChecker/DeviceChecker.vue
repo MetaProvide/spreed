@@ -482,9 +482,8 @@ export default {
 }
 
 .device-checker__preview{
-	background-color: #9195EA4D !important;
-	width: 300px !important;
-	height: 200px !important;
+	background-color: var(--adminly-light-blue) !important;
+	height: 200px;
 	margin: 1.5rem;
 }
 
