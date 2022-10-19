@@ -28,7 +28,7 @@
 			<div class="modal-header">
 				<button
 					class="adminly-close-button"
-					@click="closeModal" /></button>
+					@click="closeModal" />
 			</div>
 			<h2 class="device-checker__title">
 				{{ t('spreed', 'Camera and microphone check') }}
@@ -373,21 +373,24 @@ export default {
 	overflow-x: hidden;
 	&__title {
 		text-align: center;
+		color: var(--color-main-text);
 	}
 	&__preview {
 		position: relative;
-		margin: 0 auto 12px auto;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
 		border-radius: 12px;
-		height: 263px;
-		background-color: var(--color-loading-dark);
+		background-color: var(--adminly-light-blue) !important;
+		height: 200px;
+		margin: 1.5rem;
 	}
 
 	&__device-selection {
 		width: 100%;
+		padding-bottom: 1rem;
+		padding-top: 1.5rem;
 	}
 
 	&__call-preferences {
@@ -410,6 +413,10 @@ export default {
 		justify-content: center;
 		overflow: hidden;
 		width: 100%;
+		height: 100%;
+		background-image: url('../../../img/user.svg');
+		background-position: center;
+		background-repeat: no-repeat;
 	}
 }
 
@@ -443,6 +450,7 @@ export default {
 	align-items: center;
 	min-width: 150px;
 	margin: auto;
+	padding-block: 1rem;
 }
 
 .checkbox {
@@ -465,39 +473,13 @@ export default {
 
 .adminly-close-button {
 	margin-left: auto;
-	background-image: url("../../../img/close.svg");
+	background-image: url('../../../img/close.svg');
 	background-position: center;
 	background-repeat: no-repeat;
 	padding-inline: 1rem !important;
 	background-color: white;
 	box-shadow: none;
-    border: none;
-}
-
-.preview__novideo{
-	height: 100%;
-	background-image: url("../../../img/user.svg");
-	background-position: center;
-	background-repeat: no-repeat;
-}
-
-.device-checker__preview{
-	background-color: var(--adminly-light-blue) !important;
-	height: 200px;
-	margin: 1.5rem;
-}
-
-.call-button{
-	padding-block: 1rem;
-}
-
-.device-checker__title{
-	color: var(--color-main-text);
-}
-
-.device-checker__device-selection{
-	padding-bottom: 1rem;
-    padding-top: 1.5rem;
+	border: none;
 }
 
 .material-design-icon svg {
