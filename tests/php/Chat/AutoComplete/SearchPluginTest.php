@@ -35,8 +35,9 @@ use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
+use Test\TestCase;
 
-class SearchPluginTest extends \Test\TestCase {
+class SearchPluginTest extends TestCase {
 
 	/** @var IUserManager|MockObject */
 	protected $userManager;
@@ -50,10 +51,8 @@ class SearchPluginTest extends \Test\TestCase {
 	protected $util;
 	/** @var IL10N|MockObject */
 	protected $l;
-	/** @var string */
-	protected $userId;
-	/** @var SearchPlugin */
-	protected $plugin;
+	protected ?string $userId = null;
+	protected SearchPlugin $plugin;
 
 	public function setUp(): void {
 		parent::setUp();

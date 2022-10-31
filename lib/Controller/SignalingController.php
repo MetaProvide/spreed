@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Talk\Controller;
 
+use GuzzleHttp\Exception\ConnectException;
 use OCA\Talk\Config;
 use OCA\Talk\Events\SignalingEvent;
 use OCA\Talk\Exceptions\RoomNotFoundException;
@@ -58,34 +59,20 @@ class SignalingController extends OCSController {
 
 	public const EVENT_BACKEND_SIGNALING_ROOMS = self::class . '::signalingBackendRoom';
 
-	/** @var Config */
-	private $talkConfig;
-	/** @var \OCA\Talk\Signaling\Manager */
-	private $signalingManager;
-	/** @var TalkSession */
-	private $session;
-	/** @var Manager */
-	private $manager;
-	/** @var ParticipantService */
-	private $participantService;
-	/** @var SessionService */
-	private $sessionService;
-	/** @var IDBConnection */
-	private $dbConnection;
-	/** @var Messages */
-	private $messages;
-	/** @var IUserManager */
-	private $userManager;
-	/** @var IEventDispatcher */
-	private $dispatcher;
-	/** @var ITimeFactory */
-	private $timeFactory;
-	/** @var IClientService */
-	private $clientService;
-	/** @var LoggerInterface */
-	private $logger;
-	/** @var string|null */
-	private $userId;
+	private Config $talkConfig;
+	private \OCA\Talk\Signaling\Manager $signalingManager;
+	private TalkSession $session;
+	private Manager $manager;
+	private ParticipantService $participantService;
+	private SessionService $sessionService;
+	private IDBConnection $dbConnection;
+	private Messages $messages;
+	private IUserManager $userManager;
+	private IEventDispatcher $dispatcher;
+	private ITimeFactory $timeFactory;
+	private IClientService $clientService;
+	private LoggerInterface $logger;
+	private ?string $userId;
 
 	public function __construct(string $appName,
 								IRequest $request,
@@ -243,7 +230,7 @@ class SignalingController extends OCSController {
 			}
 
 			return new DataResponse($data);
-		} catch (\GuzzleHttp\Exception\ConnectException $e) {
+		} catch (ConnectException $e) {
 			return new DataResponse(['error' => 'CAN_NOT_CONNECT'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		} catch (\Exception $e) {
 			return new DataResponse(['error' => $e->getCode()], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -474,7 +461,7 @@ class SignalingController extends OCSController {
 	 * servers.
 	 *
 	 * See sections "Backend validation" in
-	 * https://nextcloud-talk.readthedocs.io/en/latest/standalone-signaling-api-v1/#backend-validation
+	 * https://nextcloud-spreed-signaling.readthedocs.io/en/latest/standalone-signaling-api-v1/#backend-requests
 	 *
 	 * @PublicPage
 	 * @BruteForceProtection(action=talkSignalingSecret)
@@ -748,22 +735,6 @@ class SignalingController extends OCSController {
 	}
 
 	private function backendPing(array $request): DataResponse {
-		try {
-			$room = $this->manager->getRoomByToken($request['roomid']);
-		} catch (RoomNotFoundException $e) {
-			$this->logger->debug('Tried to ping non existing room {token}', [
-				'token' => $request['roomid'],
-				'app' => 'spreed-hpb',
-			]);
-			return new DataResponse([
-				'type' => 'error',
-				'error' => [
-					'code' => 'no_such_room',
-					'message' => 'No such room.',
-				],
-			]);
-		}
-
 		$pingSessionIds = [];
 		$now = $this->timeFactory->getTime();
 		foreach ($request['entries'] as $entry) {
@@ -779,12 +750,11 @@ class SignalingController extends OCSController {
 			'type' => 'room',
 			'room' => [
 				'version' => '1.0',
-				'roomid' => $room->getToken(),
 			],
 		];
-		$this->logger->debug('Pinged {numSessions} sessions in room {token}', [
+		$this->logger->debug('Pinged {numSessions} sessions {token}', [
 			'numSessions' => count($pingSessionIds),
-			'token' => $request['roomid'],
+			'token' => !empty($request['roomid']) ? ('in room ' . $request['roomid']) : '',
 			'app' => 'spreed-hpb',
 		]);
 		return new DataResponse($response);

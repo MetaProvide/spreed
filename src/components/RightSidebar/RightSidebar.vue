@@ -21,12 +21,12 @@
 -->
 
 <template>
-	<AppSidebar
-		v-show="opened"
+	<AppSidebar v-show="opened"
 		id="app-sidebar"
 		:title="title"
 		:title-tooltip="title"
 		:starred="isFavorited"
+		:active="activeTab"
 		:title-editable="canModerate && isRenamingConversation"
 		:class="'active-tab-' + activeTab"
 		@update:active="handleUpdateActive"
@@ -39,8 +39,7 @@
 		<template slot="description">
 			<LobbyStatus v-if="canFullModerate && hasLobbyEnabled" :token="token" />
 		</template>
-		<AppSidebarTab
-			v-if="showChatInSidebar"
+		<AppSidebarTab v-if="showChatInSidebar"
 			id="chat"
 			:order="1"
 			:name="t('spreed', 'Chat')"
@@ -53,34 +52,39 @@
 			:order="2"
 			:name="participantsText"
 			icon="icon-contacts-dark">
-			<ParticipantsTab
-				:is-active="activeTab === 'participants'"
+			<ParticipantsTab :is-active="activeTab === 'participants'"
 				:can-search="canSearchParticipants"
 				:can-add="canAddParticipants" />
 		</AppSidebarTab>
-		<AppSidebarTab
+		<AppSidebarTab v-if="!getUserId || showSIPSettings"
 			id="details-tab"
 			:order="3"
 			:name="t('spreed', 'Details')"
 			icon="icon-details">
-			<SetGuestUsername
-				v-if="!getUserId" />
-			<SipSettings
-				v-if="showSIPSettings"
+			<SetGuestUsername v-if="!getUserId" />
+			<SipSettings v-if="showSIPSettings"
 				:meeting-id="conversation.token"
 				:attendee-pin="conversation.attendeePin" />
-			<CollectionList
-				v-if="getUserId && conversation.token"
-				:id="conversation.token"
-				type="room"
-				:name="conversation.displayName" />
 			<div v-if="!getUserId" id="app-settings">
 				<div id="app-settings-header">
-					<button class="settings-button" @click="showSettings">
+					<Button type="tertiary" @click="showSettings">
+						<template #icon>
+							<CogIcon decorative
+								title=""
+								:size="20" />
+						</template>
 						{{ t('spreed', 'Settings') }}
-					</button>
+					</Button>
 				</div>
 			</div>
+		</AppSidebarTab>
+		<AppSidebarTab v-if="getUserId"
+			id="shared-items"
+			ref="sharedItemsTab"
+			:order="4"
+			icon="icon-folder-multiple-image"
+			:name="t('spreed', 'Shared items')">
+			<SharedItemsTab :active="activeTab === 'shared-items'" />
 		</AppSidebarTab>
 	</AppSidebar>
 </template>
@@ -89,8 +93,8 @@
 import { emit } from '@nextcloud/event-bus'
 import AppSidebar from '@nextcloud/vue/dist/Components/AppSidebar'
 import AppSidebarTab from '@nextcloud/vue/dist/Components/AppSidebarTab'
+import SharedItemsTab from './SharedItems/SharedItemsTab'
 import ChatView from '../ChatView'
-import { CollectionList } from 'nextcloud-vue-collections'
 import BrowserStorage from '../../services/BrowserStorage'
 import { CONVERSATION, WEBINAR, PARTICIPANT } from '../../constants'
 import ParticipantsTab from './Participants/ParticipantsTab'
@@ -98,18 +102,22 @@ import isInLobby from '../../mixins/isInLobby'
 import SetGuestUsername from '../SetGuestUsername'
 import SipSettings from './SipSettings'
 import LobbyStatus from './LobbyStatus'
+import Button from '@nextcloud/vue/dist/Components/Button'
+import CogIcon from 'vue-material-design-icons/Cog'
 
 export default {
 	name: 'RightSidebar',
 	components: {
 		AppSidebar,
 		AppSidebarTab,
+		SharedItemsTab,
 		ChatView,
-		CollectionList,
 		ParticipantsTab,
 		SetGuestUsername,
 		SipSettings,
 		LobbyStatus,
+		Button,
+		CogIcon,
 	},
 
 	mixins: [
@@ -220,9 +228,29 @@ export default {
 	},
 
 	watch: {
-		conversation() {
+		conversation(newConversation, oldConversation) {
 			if (!this.isRenamingConversation) {
 				this.conversationName = this.conversation.displayName
+			}
+
+			if (newConversation.token !== oldConversation.token) {
+				if (newConversation.type === CONVERSATION.TYPE.ONE_TO_ONE) {
+					this.activeTab = 'shared-items'
+				} else {
+					this.activeTab = 'participants'
+				}
+			}
+		},
+
+		showChatInSidebar(chatInSidebar) {
+			if (chatInSidebar) {
+				this.activeTab = 'chat'
+			} else if (this.activeTab === 'chat') {
+				if (this.conversation.type === CONVERSATION.TYPE.ONE_TO_ONE) {
+					this.activeTab = 'shared-items'
+				} else {
+					this.activeTab = 'participants'
+				}
 			}
 		},
 

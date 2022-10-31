@@ -21,29 +21,24 @@
 
 <template>
 	<AppNavigation :aria-label="t('spreed', 'Conversation list')">
-		<div
-			class="new-conversation"
+		<div class="new-conversation"
 			:class="{ 'new-conversation--scrolled-down': !isScrolledToTop }">
-			<SearchBox
-				v-model="searchText"
+			<SearchBox v-model="searchText"
 				class="conversations-search"
 				:is-searching="isSearching"
 				@input="debounceFetchSearchResults"
 				@submit="onInputEnter"
 				@abort-search="abortSearch" />
-			<NewGroupConversation
-				v-if="canStartConversations" />
+			<NewGroupConversation v-if="canStartConversations" />
 		</div>
-		<template #list class="left-sidebar__list">
-			<div
-				ref="scroller"
+		<template #list>
+			<div ref="scroller"
 				class="left-sidebar__list"
 				@scroll="debounceHandleScroll">
 				<AppNavigationCaption v-if="isSearching"
 					:title="t('spreed', 'Conversations')" />
 				<li role="presentation">
-					<ConversationsList
-						ref="conversationsList"
+					<ConversationsList ref="conversationsList"
 						:conversations-list="conversationsList"
 						:initialised-conversations="initialisedConversations"
 						:search-text="searchText"
@@ -52,21 +47,17 @@
 				</li>
 				<template v-if="isSearching">
 					<template v-if="!listedConversationsLoading && searchResultsListedConversations.length > 0">
-						<AppNavigationCaption
-							:title="t('spreed', 'Open conversations')" />
-						<Conversation
-							v-for="item of searchResultsListedConversations"
+						<AppNavigationCaption :title="t('spreed', 'Open conversations')" />
+						<Conversation v-for="item of searchResultsListedConversations"
 							:key="item.id"
 							:item="item"
 							:is-search-result="true"
 							@click="joinListedConversation(item)" />
 					</template>
 					<template v-if="searchResultsUsers.length !== 0">
-						<AppNavigationCaption
-							:title="t('spreed', 'Users')" />
+						<AppNavigationCaption :title="t('spreed', 'Users')" />
 						<li v-if="searchResultsUsers.length !== 0" role="presentation">
-							<ConversationsOptionsList
-								:items="searchResultsUsers"
+							<ConversationsOptionsList :items="searchResultsUsers"
 								@click="createAndJoinConversation" />
 						</li>
 					</template>
@@ -79,21 +70,17 @@
 				</template>
 				<template v-if="showStartConversationsOptions">
 					<template v-if="searchResultsGroups.length !== 0">
-						<AppNavigationCaption
-							:title="t('spreed', 'Groups')" />
+						<AppNavigationCaption :title="t('spreed', 'Groups')" />
 						<li v-if="searchResultsGroups.length !== 0" role="presentation">
-							<ConversationsOptionsList
-								:items="searchResultsGroups"
+							<ConversationsOptionsList :items="searchResultsGroups"
 								@click="createAndJoinConversation" />
 						</li>
 					</template>
 
 					<template v-if="searchResultsCircles.length !== 0">
-						<AppNavigationCaption
-							:title="t('spreed', 'Circles')" />
+						<AppNavigationCaption :title="t('spreed', 'Circles')" />
 						<li v-if="searchResultsCircles.length !== 0" role="presentation">
-							<ConversationsOptionsList
-								:items="searchResultsCircles"
+							<ConversationsOptionsList :items="searchResultsCircles"
 								@click="createAndJoinConversation" />
 						</li>
 					</template>
@@ -104,14 +91,20 @@
 					<Hint v-else :hint="t('spreed', 'No search results')" />
 				</template>
 			</div>
+			<Button v-if="!preventFindingUnread && unreadNum > 0"
+				class="unread-mention-button"
+				type="primary"
+				@click="scrollBottomUnread">
+				{{ t('spreed', 'Unread mentions') }}
+			</Button>
 		</template>
 
 		<template #footer>
 			<div id="app-settings">
 				<div id="app-settings-header">
-					<button class="settings-button" @click="showSettings">
+					<Button class="settings-button" @click="showSettings">
 						{{ t('spreed', 'Talk settings') }}
-					</button>
+					</Button>
 				</div>
 			</div>
 		</template>
@@ -126,6 +119,7 @@ import ConversationsList from './ConversationsList/ConversationsList'
 import Conversation from './ConversationsList/Conversation'
 import ConversationsOptionsList from '../ConversationsOptionsList'
 import Hint from '../Hint'
+import Button from '@nextcloud/vue/dist/Components/Button'
 import SearchBox from './SearchBox/SearchBox'
 import debounce from 'debounce'
 import { EventBus } from '../../services/EventBus'
@@ -148,6 +142,7 @@ export default {
 		AppNavigation,
 		AppNavigationCaption,
 		ConversationsList,
+		Button,
 		ConversationsOptionsList,
 		Hint,
 		SearchBox,
@@ -177,6 +172,9 @@ export default {
 			// Keeps track of whether the conversation list is scrolled to the top or not
 			isScrolledToTop: true,
 			refreshTimer: null,
+			unreadNum: 0,
+			firstUnreadPos: 0,
+			preventFindingUnread: false,
 		}
 	},
 
@@ -260,12 +258,14 @@ export default {
 		}, 30000)
 
 		EventBus.$on('should-refresh-conversations', this.debounceFetchConversations)
+		EventBus.$once('conversations-received', this.handleUnreadMention)
 
 		this.mountArrowNavigation()
 	},
 
 	beforeDestroy() {
 		EventBus.$off('should-refresh-conversations', this.debounceFetchConversations)
+		EventBus.$off('conversations-received', this.handleUnreadMention)
 
 		this.cancelSearchPossibleConversations()
 		this.cancelSearchPossibleConversations = null
@@ -289,7 +289,17 @@ export default {
 		isFocused() {
 			return this.isSearching
 		},
-
+		scrollBottomUnread() {
+			this.preventFindingUnread = true
+			this.$refs.scroller.scrollTo({
+				top: this.firstUnreadPos - 150,
+				behavior: 'smooth',
+			})
+			setTimeout(() => {
+				this.handleUnreadMention()
+				this.preventFindingUnread = false
+			}, 500)
+		},
 		debounceFetchSearchResults: debounce(function() {
 			if (this.isSearching) {
 				this.fetchSearchResults()
@@ -461,8 +471,24 @@ export default {
 		handleScroll() {
 			this.isScrolledToTop = this.$refs.scroller.scrollTop === 0
 		},
+		elementIsBelowViewpoint(container, element) {
+			return element.offsetTop > container.scrollTop + container.clientHeight
+		},
+		handleUnreadMention() {
+			this.unreadNum = 0
+			const unreadMentions = document.getElementsByClassName('unread-mention-conversation')
+			unreadMentions.forEach(x => {
+				if (this.elementIsBelowViewpoint(this.$refs.scroller, x)) {
+					if (this.unreadNum === 0) {
+						this.firstUnreadPos = x.offsetTop
+					}
+					this.unreadNum += 1
+				}
+			})
+		},
 		debounceHandleScroll: debounce(function() {
 			this.handleScroll()
+			this.handleUnreadMention()
 		}, 50),
 	},
 }
@@ -489,4 +515,11 @@ export default {
 	padding: 0 4px;
 }
 
+.unread-mention-button {
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 100;
+	bottom: 10px;
+}
 </style>

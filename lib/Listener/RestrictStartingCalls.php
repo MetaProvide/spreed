@@ -31,12 +31,9 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
 
 class RestrictStartingCalls {
+	protected IConfig $config;
 
-	/** @var IConfig */
-	protected $config;
-
-	/** @var ParticipantService */
-	protected $participantService;
+	protected ParticipantService $participantService;
 
 	public function __construct(IConfig $config,
 								ParticipantService $participantService) {
@@ -47,7 +44,7 @@ class RestrictStartingCalls {
 	public static function register(IEventDispatcher $dispatcher): void {
 		$dispatcher->addListener(Room::EVENT_BEFORE_SESSION_JOIN_CALL, static function (ModifyParticipantEvent $event) {
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 			$listener->checkStartCallPermissions($event);
 		}, 1000);
 	}

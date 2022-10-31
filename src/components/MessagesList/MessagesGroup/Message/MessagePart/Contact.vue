@@ -20,8 +20,7 @@
 -->
 
 <template>
-	<a
-		class="contact"
+	<a class="contact"
 		:href="link"
 		:aria-label="contactAriaLabel"
 		target="_blank">

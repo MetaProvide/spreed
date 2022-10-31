@@ -49,9 +49,10 @@ use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
+use Test\TestCase;
 
 class CustomBackendNotifier extends BackendNotifier {
-	private $requests = [];
+	private array $requests = [];
 
 	public function getRequests(): array {
 		return $this->requests;
@@ -72,12 +73,9 @@ class CustomBackendNotifier extends BackendNotifier {
 /**
  * @group DB
  */
-class BackendNotifierTest extends \Test\TestCase {
-
-	/** @var Config */
-	private $config;
-	/** @var ISecureRandom */
-	private $secureRandom;
+class BackendNotifierTest extends TestCase {
+	private ?Config $config = null;
+	private ?ISecureRandom $secureRandom = null;
 	/** @var ITimeFactory|MockObject */
 	private $timeFactory;
 	/** @var ParticipantService|MockObject */
@@ -86,25 +84,17 @@ class BackendNotifierTest extends \Test\TestCase {
 	private $signalingManager;
 	/** @var IURLGenerator|MockObject */
 	private $urlGenerator;
-	/** @var CustomBackendNotifier */
-	private $controller;
+	private ?\OCA\Talk\Tests\php\Signaling\CustomBackendNotifier $controller = null;
 
-	/** @var Manager */
-	private $manager;
+	private ?Manager $manager = null;
 
-	/** @var string */
-	private $userId;
-	/** @var string */
-	private $signalingSecret;
-	/** @var string */
-	private $baseUrl;
+	private ?string $userId = null;
+	private ?string $signalingSecret = null;
+	private ?string $baseUrl = null;
 
-	/** @var Application */
-	protected $app;
-	/** @var BackendNotifier */
-	protected $originalBackendNotifier;
-	/** @var IEventDispatcher */
-	private $dispatcher;
+	protected Application $app;
+	protected BackendNotifier $originalBackendNotifier;
+	private ?IEventDispatcher $dispatcher = null;
 
 	public function setUp(): void {
 		parent::setUp();
@@ -132,7 +122,7 @@ class BackendNotifierTest extends \Test\TestCase {
 			->method('getSignalingServerForConversation')
 			->willReturn(['server' => $this->baseUrl]);
 
-		$this->dispatcher = \OC::$server->query(IEventDispatcher::class);
+		$this->dispatcher = \OC::$server->get(IEventDispatcher::class);
 		$this->config = new Config($config, $this->secureRandom, $groupManager, $this->timeFactory, $this->dispatcher);
 		$this->recreateBackendNotifier();
 
@@ -297,6 +287,35 @@ class BackendNotifierTest extends \Test\TestCase {
 			'disinvite' => [
 				'userids' => [
 					$this->userId,
+				],
+				'alluserids' => [
+				],
+				'properties' => [
+					'name' => $room->getDisplayName(''),
+					'type' => $room->getType(),
+					'lobby-state' => Webinary::LOBBY_NONE,
+					'lobby-timer' => null,
+					'read-only' => Room::READ_WRITE,
+					'listable' => Room::LISTABLE_NONE,
+					'active-since' => null,
+					'sip-enabled' => 0,
+					'participant-list' => 'refresh',
+				],
+			],
+		]);
+	}
+
+	public function testRoomDisinviteOnRemovalOfGuest() {
+		$room = $this->manager->createRoom(Room::TYPE_PUBLIC);
+		$participant = $this->participantService->joinRoomAsNewGuest($room, '');
+		$this->controller->clearRequests();
+		$this->participantService->removeAttendee($room, $participant, Room::PARTICIPANT_REMOVED);
+
+		$this->assertMessageWasSent($room, [
+			'type' => 'disinvite',
+			'disinvite' => [
+				'sessionids' => [
+					$participant->getSession()->getSessionId(),
 				],
 				'alluserids' => [
 				],

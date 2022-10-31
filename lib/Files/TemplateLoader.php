@@ -46,12 +46,9 @@ use OCP\Util;
 class TemplateLoader implements IEventListener {
 	use TInitialState;
 
-	/** @var IAppManager */
-	private $appManager;
-	/** @var IRootFolder */
-	private $rootFolder;
-	/** @var IUserSession */
-	private $userSession;
+	private IAppManager $appManager;
+	private IRootFolder $rootFolder;
+	private IUserSession $userSession;
 
 	public function __construct(IInitialState $initialState,
 								ICacheFactory $memcacheFactory,
@@ -91,10 +88,14 @@ class TemplateLoader implements IEventListener {
 			return;
 		}
 
+		$user = $this->userSession->getUser();
+		if ($user instanceof IUser && $this->talkConfig->isDisabledForUser($user)) {
+			return;
+		}
+
 		Util::addStyle(Application::APP_ID, 'merged-files');
 		Util::addScript(Application::APP_ID, 'talk-files-sidebar');
 
-		$user = $this->userSession->getUser();
 		if ($user instanceof IUser) {
 			$this->publishInitialStateForUser($user, $this->rootFolder, $this->appManager);
 		} else {

@@ -20,8 +20,7 @@
 -->
 
 <template>
-	<Content
-		v-shortkey.once="['ctrl', 'f']"
+	<Content v-shortkey.once="['ctrl', 'f']"
 		:class="{ 'icon-loading': loading, 'in-call': isInCall }"
 		app-name="talk"
 		@shortkey.native="handleAppSearch">
@@ -29,8 +28,7 @@
 		<AppContent>
 			<router-view />
 		</AppContent>
-		<RightSidebar
-			:show-chat-in-sidebar="isInCall" />
+		<RightSidebar :show-chat-in-sidebar="isInCall" />
 		<PreventUnload :when="warnLeaving || isSendingMessages" />
 		<DeviceChecker :initialize-on-mounted="false" />
 		<UploadEditor />

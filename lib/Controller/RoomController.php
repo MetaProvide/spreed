@@ -72,51 +72,29 @@ use Psr\Log\LoggerInterface;
 class RoomController extends AEnvironmentAwareController {
 	public const EVENT_BEFORE_ROOMS_GET = self::class . '::preGetRooms';
 
-	/** @var string|null */
-	protected $userId;
-	/** @var IAppManager */
-	protected $appManager;
-	/** @var TalkSession */
-	protected $session;
-	/** @var IUserManager */
-	protected $userManager;
-	/** @var IGroupManager */
-	protected $groupManager;
-	/** @var Manager */
-	protected $manager;
-	/** @var ICloudIdManager */
-	protected $cloudIdManager;
-	/** @var RoomService */
-	protected $roomService;
-	/** @var ParticipantService */
-	protected $participantService;
-	/** @var SessionService */
-	protected $sessionService;
-	/** @var GuestManager */
-	protected $guestManager;
-	/** @var IUserStatusManager */
-	protected $statusManager;
-	/** @var ChatManager */
-	protected $chatManager;
-	/** @var IEventDispatcher */
-	protected $dispatcher;
-	/** @var MessageParser */
-	protected $messageParser;
-	/** @var ITimeFactory */
-	protected $timeFactory;
-	/** @var IL10N */
-	protected $l10n;
-	/** @var IConfig */
-	protected $config;
-	/** @var Config */
-	protected $talkConfig;
-	/** @var Throttler */
-	private $throttler;
-	/** @var LoggerInterface */
-	protected $logger;
+	protected ?string $userId;
+	protected IAppManager $appManager;
+	protected TalkSession $session;
+	protected IUserManager $userManager;
+	protected IGroupManager $groupManager;
+	protected Manager $manager;
+	protected ICloudIdManager $cloudIdManager;
+	protected RoomService $roomService;
+	protected ParticipantService $participantService;
+	protected SessionService $sessionService;
+	protected GuestManager $guestManager;
+	protected IUserStatusManager $statusManager;
+	protected ChatManager $chatManager;
+	protected IEventDispatcher $dispatcher;
+	protected MessageParser $messageParser;
+	protected ITimeFactory $timeFactory;
+	protected IL10N $l10n;
+	protected IConfig $config;
+	protected Config $talkConfig;
+	protected Throttler $throttler;
+	protected LoggerInterface $logger;
 
-	/** @var array */
-	protected $commonReadMessages = [];
+	protected array $commonReadMessages = [];
 
 	public function __construct(string $appName,
 								?string $UserId,
@@ -642,7 +620,7 @@ class RoomController extends AEnvironmentAwareController {
 			return [];
 		}
 
-		return $message->toArray();
+		return $message->toArray($this->getResponseFormat());
 	}
 
 	/**
@@ -1518,7 +1496,7 @@ class RoomController extends AEnvironmentAwareController {
 	 * @param bool $promote Shall the attendee be promoted or demoted
 	 * @return DataResponse
 	 */
-	protected function changeParticipantType(int $attendeeId,  bool $promote): DataResponse {
+	protected function changeParticipantType(int $attendeeId, bool $promote): DataResponse {
 		try {
 			$targetParticipant = $this->room->getParticipantByAttendeeId($attendeeId);
 		} catch (ParticipantNotFoundException $e) {

@@ -25,27 +25,24 @@ the main body of the message as well as a quote.
 </docs>
 
 <template>
-	<li
-		:id="`message_${id}`"
+	<li :id="`message_${id}`"
 		ref="message"
 		:data-message-id="id"
 		:data-seen="seen"
 		:data-next-message-id="nextMessageId"
 		:data-previous-message-id="previousMessageId"
-		class="message">
-		<div
-			:class="{'normal-message-body': !isSystemMessage && !isDeletedMessage, 'system' : isSystemMessage}"
-			class="message-body"
-			@mouseover="handleMouseover"
-			@mouseleave="handleMouseleave">
+		class="message"
+		tabindex="0"
+		@mouseover="handleMouseover"
+		@mouseleave="handleMouseleave">
+		<div :class="{'normal-message-body': !isSystemMessage && !isDeletedMessage, 'system' : isSystemMessage}"
+			class="message-body">
 			<div v-if="isFirstMessage && showAuthor"
 				class="message-body__author"
-				role="heading"
 				aria-level="4">
 				{{ actorDisplayName }}
 			</div>
-			<div
-				ref="messageMain"
+			<div ref="messageMain"
 				class="message-body__main">
 				<div v-if="isSingleEmoji"
 					class="message-body__main__text">
@@ -66,11 +63,11 @@ the main body of the message as well as a quote.
 					<RichText :text="message" :arguments="richParameters" :autolink="true" />
 				</div>
 				<div v-if="!isDeletedMessage" class="message-body__main__right">
-					<span
-						v-tooltip.auto="messageDate"
+					<span v-tooltip.auto="messageDate"
 						class="date"
 						:style="{'visibility': hasDate ? 'visible' : 'hidden'}"
 						:class="{'date--self': showSentIcon}">{{ messageTime }}</span>
+
 					<!-- Message delivery status indicators -->
 					<div v-if="sendingFailure"
 						v-tooltip.auto="sendingErrorIconTooltip"
@@ -82,15 +79,14 @@ the main body of the message as well as a quote.
 						@focus="showReloadButton = true"
 						@mouseleave="showReloadButton = true"
 						@blur="showReloadButton = true">
-						<button
-							v-if="sendingErrorCanRetry && showReloadButton"
+						<Button v-if="sendingErrorCanRetry && showReloadButton"
 							class="nc-button nc-button__main--dark"
+							:aria-label="sendingErrorIconTooltip"
 							@click="handleRetry">
-							<Reload
-								decorative
+							<Reload decorative
 								title=""
 								:size="16" />
-						</button>
+						</Button>
 						<AlertCircle v-else
 							decorative
 							title=""
@@ -116,109 +112,69 @@ the main body of the message as well as a quote.
 							title=""
 							:size="16" />
 					</div>
-					<!-- Message Actions -->
-					<div
-						v-if="hasActions"
-						v-show="showActions"
-						class="message-body__main__right__actions"
-						:class="{ 'tall' : isTallEnough }">
-						<Actions
-							v-show="isReplyable">
-							<ActionButton
-								icon="icon-reply"
-								@click.stop="handleReply">
-								{{ t('spreed', 'Reply') }}
-							</ActionButton>
-						</Actions>
-						<Actions
-							:force-menu="true"
-							:container="container"
-							:boundaries-element="containerElement"
-							@open="handleActionMenuUpdate('open')"
-							@close="handleActionMenuUpdate('close')">
-							<ActionButton
-								v-if="isPrivateReplyable"
-								icon="icon-user"
-								:close-after-click="true"
-								@click.stop="handlePrivateReply">
-								{{ t('spreed', 'Reply privately') }}
-							</ActionButton>
-							<ActionButton
-								icon="icon-external"
-								:close-after-click="true"
-								@click.stop.prevent="handleCopyMessageLink">
-								{{ t('spreed', 'Copy message link') }}
-							</ActionButton>
-							<ActionButton
-								:close-after-click="true"
-								@click.stop="handleMarkAsUnread">
-								<template #icon>
-									<EyeOffOutline
-										decorative
-										title=""
-										:size="16" />
-								</template>
-								{{ t('spreed', 'Mark as unread') }}
-							</ActionButton>
-							<ActionLink
-								v-if="linkToFile"
-								icon="icon-text"
-								:href="linkToFile">
-								{{ t('spreed', 'Go to file') }}
-							</ActionLink>
-							<ActionButton
-								v-if="!isCurrentGuest && !isFileShare"
-								:close-after-click="true"
-								@click.stop="showForwarder = true">
-								<Share
-									slot="icon"
-									:size="16"
-									decorative
-									title="" />
-								{{ t('spreed', 'Forward message') }}
-							</ActionButton>
-							<ActionSeparator v-if="messageActions.length > 0" />
-							<template
-								v-for="action in messageActions">
-								<ActionButton
-									:key="action.label"
-									:icon="action.icon"
-									:close-after-click="true"
-									@click="action.callback(messageAPIData)">
-									{{ action.label }}
-								</ActionButton>
-							</template>
-							<template v-if="isDeleteable">
-								<ActionSeparator />
-								<ActionButton
-									icon="icon-delete"
-									:close-after-click="true"
-									@click.stop="handleDelete">
-									{{ t('spreed', 'Delete') }}
-								</ActionButton>
-							</template>
-						</Actions>
-					</div>
 				</div>
 			</div>
+
+			<!-- reactions buttons and popover with details -->
+			<div v-if="hasReactions"
+				class="message-body__reactions"
+				@mouseover="handleReactionsMouseOver">
+				<Popover v-for="reaction in Object.keys(simpleReactions)"
+					:key="reaction"
+					:delay="200"
+					trigger="hover">
+					<button v-if="simpleReactions[reaction]!== 0"
+						slot="trigger"
+						class="reaction-button"
+						:class="{'reaction-button__has-reacted': userHasReacted(reaction)}"
+						@click="handleReactionClick(reaction)">
+						<span class="reaction-button__emoji">{{ reaction }}</span>
+						<span> {{ simpleReactions[reaction] }}</span>
+					</button>
+					<div v-if="detailedReactions" class="reaction-details">
+						<span>{{ getReactionSummary(reaction) }}</span>
+					</div>
+				</Popover>
+
+				<!-- More reactions picker -->
+				<EmojiPicker v-if="canReact && showMessageButtonsBar"
+					:per-line="5"
+					:container="`#message_${id}`"
+					@select="handleReactionClick">
+					<button class="reaction-button">
+						<EmoticonOutline :size="15" />
+					</button>
+				</EmojiPicker>
+				<button v-else-if="canReact"
+					class="reaction-button">
+					<EmoticonOutline :size="15" />
+				</button>
+			</div>
 		</div>
+
+		<!-- Message actions -->
+		<MessageButtonsBar v-if="showMessageButtonsBar"
+			ref="messageButtonsBar"
+			:is-action-menu-open.sync="isActionMenuOpen"
+			:is-emoji-picker-open.sync="isEmojiPickerOpen"
+			:is-reactions-menu-open.sync="isReactionsMenuOpen"
+			:message-api-data="messageApiData"
+			:message-object="messageObject"
+			:can-react="canReact"
+			v-bind="$props"
+			:previous-message-id="previousMessageId"
+			:participant="participant"
+			@delete="handleDelete" />
 		<div v-if="isLastReadMessage"
 			v-observe-visibility="lastReadMessageVisibilityChanged">
 			<div class="new-message-marker">
 				<span>{{ t('spreed', 'Unread messages') }}</span>
 			</div>
 		</div>
-		<Forwarder v-if="showForwarder"
-			:message-object="messageObject"
-			@close="showForwarder = false" />
 	</li>
 </template>
 
 <script>
-import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
-import ActionLink from '@nextcloud/vue/dist/Components/ActionLink'
-import Actions from '@nextcloud/vue/dist/Components/Actions'
-import ActionSeparator from '@nextcloud/vue/dist/Components/ActionSeparator'
 import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip'
 import CallButton from '../../../TopBar/CallButton'
 import DeckCard from './MessagePart/DeckCard'
@@ -229,26 +185,21 @@ import RichText from '@juliushaertl/vue-richtext'
 import AlertCircle from 'vue-material-design-icons/AlertCircle'
 import Check from 'vue-material-design-icons/Check'
 import CheckAll from 'vue-material-design-icons/CheckAll'
-import EyeOffOutline from 'vue-material-design-icons/EyeOffOutline'
 import Reload from 'vue-material-design-icons/Reload'
-import Share from 'vue-material-design-icons/Share'
 import Quote from '../../../Quote'
 import isInCall from '../../../../mixins/isInCall'
 import participant from '../../../../mixins/participant'
 import { EventBus } from '../../../../services/EventBus'
 import emojiRegex from 'emoji-regex'
-import { PARTICIPANT, CONVERSATION, ATTENDEE } from '../../../../constants'
 import moment from '@nextcloud/moment'
-import {
-	showError,
-	showSuccess,
-	showWarning,
-	TOAST_DEFAULT_TIMEOUT,
-} from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import Location from './MessagePart/Location'
 import Contact from './MessagePart/Contact.vue'
-import Forwarder from './MessagePart/Forwarder'
+import MessageButtonsBar from './MessageButtonsBar/MessageButtonsBar.vue'
+import EmojiPicker from '@nextcloud/vue/dist/Components/EmojiPicker'
+import EmoticonOutline from 'vue-material-design-icons/EmoticonOutline.vue'
+import Popover from '@nextcloud/vue/dist/Components/Popover'
+import { showError, showSuccess, showWarning, TOAST_DEFAULT_TIMEOUT } from '@nextcloud/dialogs'
+import { ATTENDEE, CONVERSATION } from '../../../../constants'
 
 export default {
 	name: 'Message',
@@ -258,20 +209,17 @@ export default {
 	},
 
 	components: {
-		Actions,
-		ActionButton,
-		ActionLink,
 		CallButton,
 		Quote,
 		RichText,
 		AlertCircle,
 		Check,
 		CheckAll,
-		EyeOffOutline,
 		Reload,
-		Share,
-		ActionSeparator,
-		Forwarder,
+		MessageButtonsBar,
+		EmojiPicker,
+		EmoticonOutline,
+		Popover,
 	},
 
 	mixins: [
@@ -407,20 +355,31 @@ export default {
 			type: [String, Number],
 			default: 0,
 		},
+
+		reactions: {
+			type: [Array, Object],
+			default: () => { return {} },
+		},
+
+		reactionsSelf: {
+			type: Array,
+			default: () => { return [] },
+		},
 	},
 
 	data() {
 		return {
-			showActions: false,
+			isHovered: false,
 			// Is tall enough for both actions and date upon hovering
 			isTallEnough: false,
 			showReloadButton: false,
 			isDeleting: false,
 			// whether the message was seen, only used if this was marked as last read message
 			seen: false,
-			// Shows/hides the message forwarder component
-			showForwarder: false,
 			isActionMenuOpen: false,
+			isEmojiPickerOpen: false,
+			isReactionsMenuOpen: false,
+			detailedReactionsLoading: false,
 		}
 	},
 
@@ -439,10 +398,6 @@ export default {
 
 		messageObject() {
 			return this.$store.getters.message(this.token, this.id)
-		},
-
-		isConversationReadOnly() {
-			return this.conversation.readOnly === CONVERSATION.STATE.READ_ONLY
 		},
 
 		isSystemMessage() {
@@ -570,19 +525,11 @@ export default {
 				return false
 			}
 
-			return this.isSystemMessage || !this.showActions || this.isTallEnough
+			return this.isSystemMessage || !this.isHovered || this.isTallEnough
 		},
 
-		hasActions() {
-			return !this.isSystemMessage && !this.isTemporary
-		},
-
-		container() {
-			return this.$store.getters.getMainContainerSelector()
-		},
-
-		containerElement() {
-			return document.querySelector(this.container)
+		showMessageButtonsBar() {
+			return !this.isSystemMessage && !this.isTemporary && (this.isHovered || this.isActionMenuOpen || this.isEmojiPickerOpen || this.isReactionsMenuOpen)
 		},
 
 		isTemporaryUpload() {
@@ -618,55 +565,11 @@ export default {
 			return t('spreed', 'You cannot send messages to this conversation at the moment')
 		},
 
-		isMyMsg() {
-			return this.actorId === this.$store.getters.getActorId()
-				&& this.actorType === this.$store.getters.getActorType()
-		},
-
-		isFileShare() {
-			return this.message === '{file}' && this.messageParameters?.file
-		},
-
-		linkToFile() {
-			if (this.isFileShare) {
-				return this.messageParameters?.file?.link
-			}
-			return ''
-		},
-
-		isDeleteable() {
-			if (this.isConversationReadOnly) {
-				return false
-			}
-
-			const isObjectShare = this.message === '{object}'
-				&& this.messageParameters?.object
-
-			return (moment(this.timestamp * 1000).add(6, 'h')) > moment()
-				&& this.messageType === 'comment'
-				&& !this.isDeleting
-				&& !this.isFileShare
-				&& !isObjectShare
-				&& (this.isMyMsg
-					|| (this.conversation.type !== CONVERSATION.TYPE.ONE_TO_ONE
-						&& (this.participant.participantType === PARTICIPANT.TYPE.OWNER
-							|| this.participant.participantType === PARTICIPANT.TYPE.MODERATOR)))
-		},
-
-		isPrivateReplyable() {
-			return this.isReplyable
-				&& (this.conversation.type === CONVERSATION.TYPE.PUBLIC
-					|| this.conversation.type === CONVERSATION.TYPE.GROUP)
-				&& !this.isMyMsg
-				&& this.actorType === ATTENDEE.ACTOR_TYPE.USERS
-				&& this.$store.getters.getActorType() === ATTENDEE.ACTOR_TYPE.USERS
-		},
-
 		messageActions() {
 			return this.$store.getters.messageActions
 		},
 
-		messageAPIData() {
+		messageApiData() {
 			return {
 				message: this.messageObject,
 				metadata: this.conversation,
@@ -674,8 +577,26 @@ export default {
 			}
 		},
 
-		isCurrentGuest() {
-			return this.$store.getters.getActorType() === 'guests'
+		canReact() {
+			return this.conversation.readOnly !== CONVERSATION.STATE.READ_ONLY
+				&& this.messageObject.messageType !== 'command'
+				&& this.messageObject.messageType !== 'comment_deleted'
+		},
+
+		hasReactions() {
+			return this.$store.getters.hasReactions(this.token, this.id)
+		},
+
+		simpleReactions() {
+			return this.messageObject.reactions
+		},
+
+		detailedReactions() {
+			return this.$store.getters.reactions(this.token, this.id)
+		},
+
+		detailedReactionsLoaded() {
+			return this.$store.getters.reactionsLoaded(this.token, this.id)
 		},
 	},
 
@@ -704,6 +625,10 @@ export default {
 	},
 
 	methods: {
+		userHasReacted(reaction) {
+			return this.reactionsSelf && this.reactionsSelf.indexOf(reaction) !== -1
+		},
+
 		lastReadMessageVisibilityChanged(isVisible) {
 			if (isVisible) {
 				this.seen = true
@@ -719,27 +644,74 @@ export default {
 			// again another time
 			this.$refs.message.classList.remove('highlight-animation')
 		},
+
 		handleRetry() {
 			if (this.sendingErrorCanRetry) {
 				EventBus.$emit('retry-message', this.id)
 				EventBus.$emit('focus-chat-input')
 			}
 		},
-		handleReply() {
-			this.$store.dispatch('addMessageToBeReplied', {
-				id: this.id,
-				actorId: this.actorId,
-				actorType: this.actorType,
-				actorDisplayName: this.actorDisplayName,
-				timestamp: this.timestamp,
-				systemMessage: this.systemMessage,
-				messageType: this.messageType,
-				message: this.message,
-				messageParameters: this.messageParameters,
-				token: this.token,
-			})
-			EventBus.$emit('focus-chat-input')
+
+		handleMouseover() {
+			if (!this.isHovered) {
+				this.isHovered = true
+			}
 		},
+
+		handleReactionsMouseOver() {
+			if (this.hasReactions && !this.detailedReactionsLoaded) {
+				this.getReactions()
+			}
+		},
+
+		handleMouseleave() {
+			if (this.isHovered) {
+				this.isHovered = false
+			}
+		},
+
+		async getReactions() {
+			if (this.detailedReactionsLoading) {
+				// A parallel request is already doing this
+				return
+			}
+
+			try {
+				/**
+				 * Get reaction details when the message is hovered for the first
+				 * time. After that we rely on system messages to update the
+				 * reactions.
+				 */
+				this.detailedReactionsLoading = true
+				await this.$store.dispatch('getReactions', {
+					token: this.token,
+					messageId: this.id,
+				})
+				this.detailedReactionsLoading = false
+			} catch {
+				this.detailedReactionsLoading = false
+			}
+		},
+
+		async handleReactionClick(clickedEmoji) {
+			// Check if current user has already added this reaction to the message
+			if (!this.userHasReacted(clickedEmoji)) {
+				this.$store.dispatch('addReactionToMessage', {
+					token: this.token,
+					messageId: this.id,
+					selectedEmoji: clickedEmoji,
+					actorId: this.actorId,
+				})
+			} else {
+				this.$store.dispatch('removeReactionFromMessage', {
+					token: this.token,
+					messageId: this.id,
+					selectedEmoji: clickedEmoji,
+					actorId: this.actorId,
+				})
+			}
+		},
+
 		async handleDelete() {
 			this.isDeleting = true
 			try {
@@ -774,50 +746,34 @@ export default {
 			this.isDeleting = false
 		},
 
-		handleMouseover() {
-			this.showActions = true
-		},
+		getReactionSummary(reaction) {
+			const list = this.detailedReactions[reaction]
+			const summary = []
 
-		handleMouseleave() {
-			if (!this.isActionMenuOpen) {
-				this.showActions = false
+			for (const item in list) {
+				if (list[item].actorType === this.$store.getters.getActorType()
+					&& list[item].actorId === this.$store.getters.getActorId()) {
+					summary.unshift(t('spreed', 'You'))
+				} else {
+					summary.push(this.getDisplayNameForReaction(list[item]))
+				}
 			}
+
+			return summary.join(', ')
 		},
-		handleActionMenuUpdate(type) {
-			if (type === 'open') {
-				this.isActionMenuOpen = true
-			} else if (type === 'close') {
-				this.isActionMenuOpen = false
-				this.showActions = false
+
+		getDisplayNameForReaction(reaction) {
+			const displayName = reaction.actorDisplayName.trim()
+
+			if (reaction.actorType === ATTENDEE.ACTOR_TYPE.GUESTS) {
+				return this.$store.getters.getGuestNameWithGuestSuffix(this.token, reaction.actorId)
 			}
-		},
-		async handlePrivateReply() {
-			// open the 1:1 conversation
-			const conversation = await this.$store.dispatch('createOneToOneConversation', this.actorId)
-			this.$router.push({ name: 'conversation', params: { token: conversation.token } }).catch(err => console.debug(`Error while pushing the new conversation's route: ${err}`))
-		},
 
-		async handleCopyMessageLink() {
-			try {
-				const link = window.location.protocol + '//' + window.location.host + generateUrl('/call/' + this.token) + '#message_' + this.id
-				await this.$copyText(link)
-				showSuccess(t('spreed', 'Message link copied to clipboard.'))
-			} catch (error) {
-				console.error('Error copying link: ', error)
-				showError(t('spreed', 'The link could not be copied.'))
+			if (displayName === '') {
+				return t('spreed', 'Deleted user')
 			}
-		},
 
-		async handleMarkAsUnread() {
-			// update in backend + visually
-			await this.$store.dispatch('updateLastReadMessage', {
-				token: this.token,
-				id: this.previousMessageId,
-				updateVisually: true,
-			})
-
-			// reload conversation to update additional attributes that have computed values
-			await this.$store.dispatch('fetchConversation', { token: this.token })
+			return displayName
 		},
 	},
 }
@@ -827,17 +783,20 @@ export default {
 @import '../../../../assets/variables';
 @import '../../../../assets/buttons';
 
-.normal-message-body {
-	&:hover {
-		border-radius: 8px;
-		background-color: var(--color-background-hover);
-	}
+.message:hover .normal-message-body {
+	border-radius: 8px;
+	background-color: var(--color-background-hover);
+}
+
+.message {
+	position: relative;
 }
 
 .message-body {
 	padding: 4px;
 	font-size: $chat-font-size;
 	line-height: $chat-line-height;
+	position: relative;
 	&__author {
 		color: var(--color-text-maxcontrast);
 	}
@@ -894,21 +853,12 @@ export default {
 			font-size: $chat-font-size;
 			flex: 1 0 auto;
 			padding: 0 8px 0 8px;
-			&__actions {
-				display: flex;
-				position: absolute;
-				top: -8px;
-				right: 50px;
-				&.tall {
-					top: unset;
-					right: 8px;
-					bottom: -8px;
-				}
-			}
-			& h6 {
-				margin-left: auto;
-			}
 		}
+	}
+	&__reactions {
+		display: flex;
+		flex-wrap: wrap;
+		margin: 4px 175px 4px -2px;
 	}
 }
 
@@ -922,20 +872,12 @@ export default {
 // Increase the padding for regular messages to improve readability and
 // allow some space for the reply button
 .message-body:not(.system) {
-	padding: 12px 4px 12px 8px;
-	margin: -6px 0;
-}
-
-.hover, .highlight-animation {
-	border-radius: 8px;
-}
-
-.hover {
-	background-color: var(--color-background-hover);
+	padding: 4px 4px 4px 8px;
 }
 
 .highlight-animation {
 	animation: highlight-animation 5s 1;
+	border-radius: 8px;
 }
 
 @keyframes highlight-animation {
@@ -974,5 +916,30 @@ export default {
 	&.retry-option {
 		cursor: pointer;
 	}
+}
+
+.reaction-button {
+	// Clear server rules
+	min-height: 0 !important;
+	padding: 0 8px !important;
+	font-weight: normal !important;
+
+	margin: 2px;
+	height: 26px;
+	background-color: var(--color-main-background);
+
+	&__emoji {
+		margin: 0 4px 0 0;
+	}
+
+	&__has-reacted,
+	&:hover {
+		border-color: var(--color-primary-element);
+		background-color: var(--color-primary-element-lighter);
+	}
+}
+
+.reaction-details {
+	padding: 8px;
 }
 </style>

@@ -44,20 +44,15 @@ class Executor {
 	public const PLACEHOLDER_ARGUMENTS = '{ARGUMENTS}';
 	public const PLACEHOLDER_ARGUMENTS_DOUBLEQUOTE_ESCAPED = '{ARGUMENTS_DOUBLEQUOTE_ESCAPED}';
 
-	/** @var IEventDispatcher */
-	protected $dispatcher;
+	protected IEventDispatcher $dispatcher;
 
-	/** @var ShellExecutor */
-	protected $shellExecutor;
+	protected ShellExecutor $shellExecutor;
 
-	/** @var CommandService */
-	protected $commandService;
+	protected CommandService $commandService;
 
-	/** @var LoggerInterface */
-	protected $logger;
+	protected LoggerInterface $logger;
 
-	/** @var IL10N */
-	protected $l;
+	protected IL10N $l;
 
 	public function __construct(IEventDispatcher $dispatcher,
 								ShellExecutor $shellExecutor,
@@ -98,7 +93,7 @@ class Executor {
 				'output' => $e->getMessage(),
 			]), ChatManager::MAX_CHAT_LENGTH);
 			$message->setActor('bots', $command->getName());
-			$message->setVerb('command');
+			$message->setVerb(ChatManager::VERB_COMMAND);
 			return;
 		}
 
@@ -117,7 +112,7 @@ class Executor {
 			'output' => $output,
 		]), ChatManager::MAX_CHAT_LENGTH);
 		$message->setActor('bots', $command->getName());
-		$message->setVerb('command');
+		$message->setVerb(ChatManager::VERB_COMMAND);
 	}
 
 	protected function execHelp(Room $room, IComment $message, string $arguments, Participant $participant): string {
@@ -132,7 +127,7 @@ class Executor {
 			if ($command->getApp() !== '') {
 				$response = $this->execHelpSingleCommand($room, $message, $command->getApp() . ' ' . $command->getCommand());
 			} else {
-				if ($command->getCommand() === 'help' || strpos($command->getScript(),'alias:') !== false ||
+				if ($command->getCommand() === 'help' || strpos($command->getScript(), 'alias:') !== false ||
 						!$this->isCommandAvailableForParticipant($command, $participant)) {
 					continue;
 				}
@@ -140,8 +135,9 @@ class Executor {
 			}
 
 			$response = trim($response);
-			if (strpos($response, "\n")) {
-				$tempHelp = substr($response, 0, strpos($response, "\n"));
+			$newLinePosition = strpos($response, "\n");
+			if ($newLinePosition !== false) {
+				$tempHelp = substr($response, 0, $newLinePosition);
 				if ($tempHelp === 'Description:') {
 					$hasHelpSection = strpos($response, "\nHelp:\n");
 					if ($hasHelpSection !== false) {

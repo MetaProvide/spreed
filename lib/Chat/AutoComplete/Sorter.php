@@ -28,9 +28,7 @@ use OCP\Collaboration\AutoComplete\ISorter;
 use OCP\Comments\ICommentsManager;
 
 class Sorter implements ISorter {
-
-	/** @var ICommentsManager */
-	protected $commentsManager;
+	protected ICommentsManager $commentsManager;
 
 	public function __construct(CommentsManager $commentsManager) {
 		$this->commentsManager = $commentsManager;
@@ -63,13 +61,13 @@ class Sorter implements ISorter {
 				$context['itemId'],
 				'comment',
 				$type,
-				array_map(function ($suggestion) {
+				array_map(function (array $suggestion) {
 					return $suggestion['value']['shareWith'];
 				}, $byType));
 
 			$search = $context['search'];
 
-			usort($byType, function ($a, $b) use ($lastComments, $search) {
+			usort($byType, function (array $a, array $b) use ($lastComments, $search) {
 				if ($search) {
 					// If the user searched for "Dani" we make sure "Daniel" comes before "Madani"
 					if (stripos($a['label'], $search) === 0) {

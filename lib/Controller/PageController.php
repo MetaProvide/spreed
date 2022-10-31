@@ -25,7 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\Talk\Controller;
 
-use OC\HintException;
 use OC\Security\Bruteforce\Throttler;
 use OCA\Talk\Exceptions\ParticipantNotFoundException;
 use OCA\Talk\Exceptions\RoomNotFoundException;
@@ -48,6 +47,7 @@ use OCP\AppFramework\Services\IInitialState;
 use OCP\EventDispatcher\GenericEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\IRootFolder;
+use OCP\HintException;
 use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -60,30 +60,18 @@ use Psr\Log\LoggerInterface;
 class PageController extends Controller {
 	use TInitialState;
 
-	/** @var string|null */
-	private $userId;
-	/** @var IEventDispatcher */
-	private $eventDispatcher;
-	/** @var RoomController */
-	private $api;
-	/** @var TalkSession */
-	private $talkSession;
-	/** @var IUserSession */
-	private $userSession;
-	/** @var LoggerInterface */
-	private $logger;
-	/** @var Manager */
-	private $manager;
-	/** @var IURLGenerator */
-	private $url;
-	/** @var INotificationManager */
-	private $notificationManager;
-	/** @var IAppManager */
-	private $appManager;
-	/** @var IRootFolder */
-	private $rootFolder;
-	/** @var Throttler */
-	private $throttler;
+	private ?string $userId;
+	private IEventDispatcher $eventDispatcher;
+	private RoomController $api;
+	private TalkSession $talkSession;
+	private IUserSession $userSession;
+	private LoggerInterface $logger;
+	private Manager $manager;
+	private IURLGenerator $url;
+	private INotificationManager $notificationManager;
+	private IAppManager $appManager;
+	private IRootFolder $rootFolder;
+	private Throttler $throttler;
 
 	public function __construct(string $appName,
 								IRequest $request,

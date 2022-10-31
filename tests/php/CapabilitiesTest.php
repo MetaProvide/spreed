@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Talk\Tests\Unit;
 
 use OCA\Talk\Capabilities;
+use OCA\Talk\Chat\CommentsManager;
 use OCA\Talk\Config;
 use OCA\Talk\Participant;
 use OCP\Capabilities\IPublicCapability;
@@ -41,16 +42,21 @@ class CapabilitiesTest extends TestCase {
 	protected $serverConfig;
 	/** @var Config|MockObject */
 	protected $talkConfig;
+	/** @var CommentsManager|MockObject */
+	protected $commentsManager;
 	/** @var IUserSession|MockObject */
 	protected $userSession;
-	/** @var array */
-	protected $baseFeatures;
+	protected ?array $baseFeatures = null;
 
 	public function setUp(): void {
 		parent::setUp();
 		$this->serverConfig = $this->createMock(IConfig::class);
 		$this->talkConfig = $this->createMock(Config::class);
+		$this->commentsManager = $this->createMock(CommentsManager::class);
 		$this->userSession = $this->createMock(IUserSession::class);
+		$this->commentsManager->expects($this->any())
+			->method('supportReactions')
+			->willReturn(true);
 
 		$this->baseFeatures = [
 			'audio',
@@ -75,6 +81,7 @@ class CapabilitiesTest extends TestCase {
 			'read-only-rooms',
 			'listable-rooms',
 			'chat-read-marker',
+			'chat-unread',
 			'webinary-lobby',
 			'start-call-flag',
 			'chat-replies',
@@ -95,7 +102,10 @@ class CapabilitiesTest extends TestCase {
 			'direct-mention-flag',
 			'notification-calls',
 			'conversation-permissions',
+			'rich-object-list-media',
+			'rich-object-delete',
 			'unified-search',
+			'reactions',
 		];
 	}
 
@@ -103,6 +113,7 @@ class CapabilitiesTest extends TestCase {
 		$capabilities = new Capabilities(
 			$this->serverConfig,
 			$this->talkConfig,
+			$this->commentsManager,
 			$this->userSession
 		);
 
@@ -118,6 +129,7 @@ class CapabilitiesTest extends TestCase {
 			->willReturnMap([
 				['spreed', 'has_reference_id', 'no', 'no'],
 				['spreed', 'max-gif-size', '3145728', '200000'],
+				['spreed', 'session-ping-limit', '200', '200'],
 			]);
 
 		$this->assertInstanceOf(IPublicCapability::class, $capabilities);
@@ -137,6 +149,9 @@ class CapabilitiesTest extends TestCase {
 					],
 					'previews' => [
 						'max-gif-size' => 200000,
+					],
+					'signaling' => [
+						'session-ping-limit' => 200,
 					],
 				],
 			],
@@ -160,6 +175,7 @@ class CapabilitiesTest extends TestCase {
 		$capabilities = new Capabilities(
 			$this->serverConfig,
 			$this->talkConfig,
+			$this->commentsManager,
 			$this->userSession
 		);
 
@@ -196,6 +212,7 @@ class CapabilitiesTest extends TestCase {
 			->willReturnMap([
 				['spreed', 'has_reference_id', 'no', 'yes'],
 				['spreed', 'max-gif-size', '3145728', '200000'],
+				['spreed', 'session-ping-limit', '200', '50'],
 			]);
 
 		$this->assertInstanceOf(IPublicCapability::class, $capabilities);
@@ -222,6 +239,9 @@ class CapabilitiesTest extends TestCase {
 					'previews' => [
 						'max-gif-size' => 200000,
 					],
+					'signaling' => [
+						'session-ping-limit' => 50,
+					],
 				],
 			],
 		], $data);
@@ -246,6 +266,7 @@ class CapabilitiesTest extends TestCase {
 		$capabilities = new Capabilities(
 			$this->serverConfig,
 			$this->talkConfig,
+			$this->commentsManager,
 			$this->userSession
 		);
 

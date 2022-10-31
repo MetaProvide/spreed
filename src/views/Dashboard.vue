@@ -28,15 +28,12 @@
 		:show-items-and-empty-content="!hasImportantConversations"
 		:half-empty-content-message="t('spreed', 'No unread mentions')">
 		<template #default="{ item }">
-			<DashboardWidgetItem
-				:target-url="getItemTargetUrl(item)"
+			<DashboardWidgetItem :target-url="getItemTargetUrl(item)"
 				:main-text="getMainText(item)"
 				:sub-text="getSubText(item)"
-				:item="item"
-				v-on="handlers">
+				:item="item">
 				<template #avatar>
-					<ConversationIcon
-						:item="item"
+					<ConversationIcon :item="item"
 						:hide-favorite="true"
 						:hide-call="false"
 						:disable-menu="true" />
@@ -47,10 +44,11 @@
 			<EmptyContent icon="icon-talk">
 				<template #desc>
 					{{ t('spreed', 'Say hi to your friends and colleagues!') }}
-					<button
+					<Button class="button-start-conversation"
+						type="secondary"
 						@click="clickStartNew">
 						{{ t('spreed', 'Start a conversation') }}
-					</button>
+					</Button>
 				</template>
 			</EmptyContent>
 		</template>
@@ -64,6 +62,7 @@ import EmptyContent from '@nextcloud/vue/dist/Components/EmptyContent'
 import axios from '@nextcloud/axios'
 import { generateOcsUrl, generateUrl } from '@nextcloud/router'
 import { CONVERSATION } from '../constants'
+import Button from '@nextcloud/vue/dist/Components/Button'
 
 const ROOM_POLLING_INTERVAL = 30
 
@@ -78,7 +77,7 @@ const propertySort = (properties) => (a, b) => properties.map(obj => {
 
 export default {
 	name: 'Dashboard',
-	components: { DashboardWidget, DashboardWidgetItem, ConversationIcon, EmptyContent },
+	components: { DashboardWidget, Button, DashboardWidgetItem, ConversationIcon, EmptyContent },
 
 	data() {
 		return {
@@ -218,5 +217,10 @@ export default {
 			margin-top: 0;
 			margin-bottom: 2vh;
 		}
+	}
+
+	.button-start-conversation {
+		margin: 0 auto;
+		margin-top: 3px;
 	}
 </style>

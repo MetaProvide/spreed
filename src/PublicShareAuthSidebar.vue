@@ -28,8 +28,7 @@
 				<h2>{{ t('spreed', 'This conversation has ended') }}</h2>
 			</div>
 			<template v-else>
-				<TopBar
-					:is-in-call="true"
+				<TopBar :is-in-call="true"
 					:is-sidebar="true" />
 				<CallView :token="token" :is-sidebar="true" />
 				<ChatView />
@@ -190,7 +189,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import './assets/variables.scss';
+@import './assets/variables';
 
 /* Properties based on the app-sidebar */
 #talk-sidebar {

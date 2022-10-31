@@ -21,8 +21,7 @@
 
 <template>
 	<div>
-		<SearchBox
-			v-if="canSearch"
+		<SearchBox v-if="canSearch"
 			v-model="searchText"
 			:placeholder-text="searchBoxPlaceholder"
 			:is-searching="isSearching"
@@ -30,11 +29,9 @@
 			@abort-search="abortSearch" />
 		<AppNavigationCaption v-if="isSearching && canAdd"
 			:title="t('spreed', 'Participants')" />
-		<CurrentParticipants
-			:search-text="searchText"
+		<CurrentParticipants :search-text="searchText"
 			:participants-initialised="participantsInitialised" />
-		<ParticipantsSearchResults
-			v-if="canAdd && isSearching"
+		<ParticipantsSearchResults v-if="canAdd && isSearching"
 			:search-results="searchResults"
 			:contacts-loading="contactsLoading"
 			:no-results="noResults"

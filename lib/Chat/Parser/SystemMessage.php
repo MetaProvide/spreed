@@ -49,38 +49,28 @@ use OCP\Share\Exceptions\ShareNotFound;
 use Sabre\VObject\Reader;
 
 class SystemMessage {
-
-	/** @var IUserManager */
-	protected $userManager;
-	/** @var IGroupManager */
-	protected $groupManager;
-	/** @var GuestManager */
-	protected $guestManager;
-	/** @var IPreviewManager */
-	protected $previewManager;
-	/** @var RoomShareProvider */
-	protected $shareProvider;
-	/** @var PhotoCache */
-	protected $photoCache;
-	/** @var IRootFolder */
-	protected $rootFolder;
-	/** @var IURLGenerator */
-	protected $url;
-	/** @var IL10N */
-	protected $l;
+	protected IUserManager $userManager;
+	protected IGroupManager $groupManager;
+	protected GuestManager $guestManager;
+	protected IPreviewManager $previewManager;
+	protected RoomShareProvider $shareProvider;
+	protected PhotoCache $photoCache;
+	protected IRootFolder $rootFolder;
+	protected IURLGenerator $url;
+	protected ?IL10N $l = null;
 
 	/**
 	 * @psalm-var array<array-key, null|string>
 	 */
-	protected $displayNames = [];
+	protected array $displayNames = [];
 	/** @var string[] */
-	protected $groupNames = [];
+	protected array $groupNames = [];
 	/** @var string[] */
-	protected $circleNames = [];
+	protected array $circleNames = [];
 	/** @var string[] */
-	protected $circleLinks = [];
+	protected array $circleLinks = [];
 	/** @var string[] */
-	protected $guestNames = [];
+	protected array $guestNames = [];
 
 	public function __construct(IUserManager $userManager,
 								IGroupManager $groupManager,
@@ -386,7 +376,7 @@ class SystemMessage {
 				if (isset($metaData['messageType']) && $metaData['messageType'] === 'voice-message') {
 					$chatMessage->setMessageType('voice-message');
 				} else {
-					$chatMessage->setMessageType('comment');
+					$chatMessage->setMessageType(ChatManager::VERB_MESSAGE);
 				}
 			} catch (\Exception $e) {
 				$parsedMessage = $this->l->t('{actor} shared a file which is no longer available');
@@ -405,7 +395,7 @@ class SystemMessage {
 				$parsedMessage = $this->l->t('The shared location is malformed');
 			}
 
-			$chatMessage->setMessageType('comment');
+			$chatMessage->setMessageType(ChatManager::VERB_MESSAGE);
 		} elseif ($message === 'matterbridge_config_added') {
 			$parsedMessage = $this->l->t('{actor} set up Matterbridge to synchronize this conversation with other chats');
 			if ($currentUserIsActor) {
@@ -435,6 +425,11 @@ class SystemMessage {
 			$parsedMessage = $this->l->t('{actor} deleted a message');
 			if ($currentUserIsActor) {
 				$parsedMessage = $this->l->t('You deleted a message');
+			}
+		} elseif ($message === 'reaction_revoked') {
+			$parsedMessage = $this->l->t('{actor} deleted a reaction');
+			if ($currentUserIsActor) {
+				$parsedMessage = $this->l->t('You deleted a reaction');
 			}
 		} elseif ($message === 'history_cleared') {
 			$parsedMessage = $this->l->t('{actor} cleared the history of the conversation');
@@ -478,7 +473,7 @@ class SystemMessage {
 				$currentActorId === $parsedParameters['actor']['id'];
 		}
 
-		if ($chatMessage->getMessageType() === 'comment_deleted') {
+		if ($chatMessage->getMessageType() === ChatManager::VERB_MESSAGE_DELETED) {
 			$message = 'message_deleted';
 			$parsedMessage = $this->l->t('Message deleted by author');
 
@@ -491,6 +486,9 @@ class SystemMessage {
 		} else {
 			throw new \OutOfBoundsException('Unknown subject');
 		}
+
+		// Overwrite reactions of deleted messages as you can not react to them anymore either
+		$chatMessage->getComment()->setReactions([]);
 
 		$chatMessage->setMessage($parsedMessage, $parsedParameters, $message);
 	}

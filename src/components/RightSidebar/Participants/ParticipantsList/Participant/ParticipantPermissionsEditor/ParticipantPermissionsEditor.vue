@@ -21,8 +21,7 @@
 
 <template>
 	<div class="wrapper">
-		<PermissionEditor
-			:display-name="displayName"
+		<PermissionEditor :display-name="displayName"
 			:permissions="permissions"
 			v-on="$listeners"
 			@submit="handleSubmitPermissions" />

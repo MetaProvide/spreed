@@ -87,5 +87,12 @@ title: Capabilities
 * `notification-calls` - Whether the API to opt out of call notifications is available
 * `conversation-permissions` - Whether the default and custom permissions can be set for attendees.
 
-### 13.0.7
+## 14
+* `chat-unread` - Whether the API to mark a conversation as unread is available
+* `reactions` - Api reactions to chat message
+* `rich-object-list-media` - When the API to get the chat messages for shared media is available
+* `rich-object-delete` - When the API allows to delete chat messages which are file or rich object shares
+
+### 14.0.3
 * `unified-search` - When the extended attributes of unified search results are there
+* `config => signaling => session-ping-limit` - Number of sessions the HPB is allowed to ping in the same request

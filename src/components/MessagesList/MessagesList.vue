@@ -28,19 +28,15 @@ get the messagesList array and loop through the list to generate the messages.
 <template>
 	<!-- size and remain refer to the amount and initial height of the items that
 	are outside of the viewport -->
-	<div
-		ref="scroller"
+	<div ref="scroller"
 		class="scroller"
 		@scroll="debounceHandleScroll">
-		<div
-			v-if="displayMessagesLoader"
+		<div v-if="displayMessagesLoader"
 			class="scroller__loading"
 			disabled>
-			<div
-				class="icon-loading" />
+			<div class="icon-loading" />
 		</div>
-		<MessagesGroup
-			v-for="(item, index) of messagesGroupedByAuthor"
+		<MessagesGroup v-for="(item, index) of messagesGroupedByAuthor"
 			:key="item[0].id"
 			:style="{ height: item.height + 'px' }"
 			v-bind="item"
@@ -49,20 +45,21 @@ get the messagesList array and loop through the list to generate the messages.
 			:next-message-id="(messagesGroupedByAuthor[index + 1] && messagesGroupedByAuthor[index + 1][0].id) || 0"
 			:previous-message-id="(index > 0 && messagesGroupedByAuthor[index - 1][messagesGroupedByAuthor[index - 1].length - 1].id) || 0" />
 		<template v-if="!messagesGroupedByAuthor.length">
-			<LoadingPlaceholder
-				type="messages"
+			<LoadingPlaceholder type="messages"
 				:count="15" />
 		</template>
 		<transition name="fade">
-			<button v-show="!isChatScrolledToBottom"
+			<Button v-show="!isChatScrolledToBottom"
+				type="secondary"
 				:aria-label="scrollToBottomAriaLabel"
 				class="scroll-to-bottom"
 				@click="smoothScrollToBottom">
-				<ChevronDown
-					decorative
-					title=""
-					:size="20" />
-			</button>
+				<template #icon>
+					<ChevronDown decorative
+						title=""
+						:size="20" />
+				</template>
+			</Button>
 		</transition>
 	</div>
 </template>
@@ -79,6 +76,7 @@ import { EventBus } from '../../services/EventBus'
 import LoadingPlaceholder from '../LoadingPlaceholder'
 import ChevronDown from 'vue-material-design-icons/ChevronDown'
 import uniqueId from 'lodash/uniqueId'
+import Button from '@nextcloud/vue/dist/Components/Button'
 
 export default {
 	name: 'MessagesList',
@@ -86,6 +84,7 @@ export default {
 		LoadingPlaceholder,
 		MessagesGroup,
 		ChevronDown,
+		Button,
 	},
 
 	mixins: [
@@ -241,9 +240,6 @@ export default {
 		isWindowVisible(visible) {
 			if (visible) {
 				this.onWindowFocus()
-				// FIXME: the sidebar chat takes much longer to open, this is why we need a higher value here
-				// need to investigate why the sidebar takes that long to open and is not even animated
-				window.setTimeout(() => this.scrollToFocussedMessage(), 100)
 			}
 		},
 		chatIdentifier: {
@@ -402,7 +398,7 @@ export default {
 			let focussed = null
 			if (this.$route?.hash?.startsWith('#message_')) {
 				// scroll to message in URL anchor
-				focussed = this.focusMessage(this.$route.hash.substr(9), false)
+				focussed = this.focusMessage(this.$route.hash.slice(9), false)
 			}
 
 			if (!focussed && this.visualLastReadMessageId) {
@@ -462,7 +458,7 @@ export default {
 				// scroll right away to avoid delays
 				if (!this.$store.getters.hasMoreMessagesToLoad(this.token)) {
 					hasScrolled = true
-					await this.$nextTick(() => {
+					this.$nextTick(() => {
 						this.scrollToFocussedMessage()
 					})
 				}
@@ -882,7 +878,7 @@ export default {
 					// the hash
 					window.setTimeout(() => {
 						// scroll to message in URL anchor
-						this.focusMessage(to.hash.substr(9), true)
+						this.focusMessage(to.hash.slice(9), true)
 					}, 2)
 				}
 			}
@@ -905,7 +901,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/variables.scss';
+@import '../../assets/variables';
 
 .scroller {
 	flex: 1 0;
@@ -920,16 +916,9 @@ export default {
 
 .scroll-to-bottom {
 	position: absolute;
-	width: 44px;
-	height: 44px;
 	bottom: 76px;
 	right: 24px;
 	z-index: 2;
-	padding: 0;
-	margin: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
 }
 
 </style>

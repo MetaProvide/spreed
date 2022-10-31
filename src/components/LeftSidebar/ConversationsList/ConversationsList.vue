@@ -21,15 +21,12 @@
 
 <template>
 	<ul class="conversations">
-		<Conversation
-			v-for="item of conversationsList"
+		<Conversation v-for="item of conversationsList"
 			:key="item.id"
 			:item="item"
 			@click="handleConversationClick(item)" />
-		<template
-			v-if="!initialisedConversations">
-			<LoadingPlaceholder
-				type="conversations" />
+		<template v-if="!initialisedConversations">
+			<LoadingPlaceholder type="conversations" />
 		</template>
 		<Hint v-else-if="searchText && !conversationsList.length"
 			:hint="t('spreed', 'No matches')" />

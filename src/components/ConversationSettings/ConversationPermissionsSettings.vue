@@ -66,19 +66,16 @@
 			</CheckboxRadioSwitch>
 
 			<!-- Edit advanced permissions -->
-			<button
-				v-show="showEditButton"
+			<button v-show="showEditButton"
 				:aria-label="t('spreed', 'Edit permissions')"
 				class="nc-button nc-button__main"
 				@click="showPermissionsEditor = true">
-				<Pencil
-					:size="20"
+				<Pencil :size="20"
 					decorative
 					title="" />
 			</button>
 		</div>
-		<PermissionEditor
-			v-if="showPermissionsEditor"
+		<PermissionEditor v-if="showPermissionsEditor"
 			:conversation-name="conversationName"
 			:permissions="conversationPermissions"
 			:loading="loading"
@@ -237,7 +234,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/buttons.scss';
+@import '../../assets/buttons';
 
 ::v-deep .mx-input {
 	margin: 0;

@@ -30,14 +30,12 @@
 		<div class="wrapper"
 			:class="{'wrapper--system': isSystemMessage}">
 			<div v-if="!isSystemMessage" class="messages__avatar">
-				<AuthorAvatar
-					:author-type="actorType"
+				<AuthorAvatar :author-type="actorType"
 					:author-id="actorId"
 					:display-name="actorDisplayName" />
 			</div>
 			<ul class="messages">
-				<Message
-					v-for="(message, index) of messages"
+				<Message v-for="(message, index) of messages"
 					:key="message.id"
 					v-bind="message"
 					:is-first-message="index === 0"

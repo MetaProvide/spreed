@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Talk\Chat;
 
+use OCP\DB\Exception;
 use OC\Comments\Comment;
 use OC\Comments\Manager;
 use OCP\Comments\IComment;
@@ -42,27 +43,53 @@ class CommentsManager extends Manager {
 	}
 
 	/**
-	 * TODO Remove when server version with https://github.com/nextcloud/server/pull/29921 is required
-	 *
-	 * @param string $objectType
-	 * @param string $objectId
-	 * @param int $lastRead
-	 * @param string[] $verbs
-	 * @return int
+	 * @param string[] $ids
+	 * @return IComment[]
+	 * @throws Exception
 	 */
-	public function getNumberOfCommentsWithVerbsForObjectSinceComment(string $objectType, string $objectId, int $lastRead, array $verbs): int {
-		$query = $this->dbConn->getQueryBuilder();
-		$query->select($query->func()->count('id', 'num_messages'))
-			->from('comments')
-			->where($query->expr()->eq('object_type', $query->createNamedParameter($objectType)))
-			->andWhere($query->expr()->eq('object_id', $query->createNamedParameter($objectId)))
-			->andWhere($query->expr()->gt('id', $query->createNamedParameter($lastRead)))
-			->andWhere($query->expr()->in('verb', $query->createNamedParameter($verbs, IQueryBuilder::PARAM_STR_ARRAY)));
+	public function getCommentsById(array $ids): array {
+		$commentIds = array_map('intval', $ids);
 
-		$result = $query->executeQuery();
-		$data = $result->fetch();
+		$query = $this->dbConn->getQueryBuilder();
+		$query->select('*')
+			->from('comments')
+			->where($query->expr()->in('id', $query->createNamedParameter($commentIds, IQueryBuilder::PARAM_INT_ARRAY)));
+
+		$comments = [];
+		$result = $query->execute();
+		while ($row = $result->fetch()) {
+			$comments[(int) $row['id']] = $this->getCommentFromData($row);
+		}
 		$result->closeCursor();
 
-		return (int) ($data['num_messages'] ?? 0);
+		return $comments;
+	}
+
+	/**
+	 * @param string $actorType
+	 * @param string $actorId
+	 * @param string[] $messageIds
+	 * @return array
+	 * @psalm-return array<int, string[]>
+	 */
+	public function retrieveReactionsByActor(string $actorType, string $actorId, array $messageIds): array {
+		$commentIds = array_map('intval', $messageIds);
+
+		$query = $this->dbConn->getQueryBuilder();
+		$query->select('*')
+			->from('reactions')
+			->where($query->expr()->eq('actor_type', $query->createNamedParameter($actorType)))
+			->andWhere($query->expr()->eq('actor_id', $query->createNamedParameter($actorId)))
+			->andWhere($query->expr()->in('parent_id', $query->createNamedParameter($commentIds, IQueryBuilder::PARAM_INT_ARRAY)));
+
+		$reactions = [];
+		$result = $query->executeQuery();
+		while ($row = $result->fetch()) {
+			$reactions[(int) $row['parent_id']] ??= [];
+			$reactions[(int) $row['parent_id']][] = $row['reaction'];
+		}
+		$result->closeCursor();
+
+		return $reactions;
 	}
 }

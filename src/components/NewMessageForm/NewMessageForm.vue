@@ -20,8 +20,7 @@
 -->
 
 <template>
-	<div
-		class="wrapper"
+	<div class="wrapper"
 		:class="{'wrapper--chatScrolledToBottom': isChatScrolledToBottom}">
 		<!--native file picker, hidden -->
 		<input id="file-upload"
@@ -32,35 +31,28 @@
 			aria-hidden="true"
 			class="hidden-visually"
 			@change="handleFileInput">
-		<div
-			class="new-message">
-			<form
-				class="new-message-form"
+		<div class="new-message">
+			<form class="new-message-form"
 				@submit.prevent>
-				<div
-					v-if="canUploadFiles || canShareFiles"
+				<div v-if="canUploadFiles || canShareFiles"
 					class="new-message-form__upload-menu">
-					<Actions
-						ref="uploadMenu"
+					<Actions ref="uploadMenu"
 						:container="container"
 						:boundaries-element="containerElement"
 						:disabled="disabled"
 						:aria-label="t('spreed', 'Share files to the conversation')"
 						:aria-haspopup="true">
-						<Paperclip
-							slot="icon"
+						<Paperclip slot="icon"
 							:size="16"
 							decorative
 							title="" />
-						<ActionButton
-							v-if="canUploadFiles"
+						<ActionButton v-if="canUploadFiles"
 							:close-after-click="true"
 							icon="icon-upload"
 							@click.prevent="clickImportInput">
 							{{ t('spreed', 'Upload new files') }}
 						</ActionButton>
-						<ActionButton
-							v-if="canShareFiles"
+						<ActionButton v-if="canShareFiles"
 							:close-after-click="true"
 							icon="icon-folder"
 							@click.prevent="handleFileShare">
@@ -70,43 +62,36 @@
 				</div>
 				<div class="new-message-form__input">
 					<div class="new-message-form__emoji-picker">
-						<EmojiPicker
-							v-if="!disabled"
+						<EmojiPicker v-if="!disabled"
 							:container="container"
 							:close-on-select="false"
 							@select="addEmoji">
-							<button
-								type="button"
-								:disabled="disabled"
-								class="nc-button nc-button__main emoji-picker-button"
+							<Button :disabled="disabled"
 								:aria-label="t('spreed', 'Add emoji')"
+								type="tertiary-no-background"
 								:aria-haspopup="true">
-								<EmoticonOutline
-									:size="16"
+								<EmoticonOutline :size="16"
 									decorative
 									title="" />
-							</button>
+							</Button>
 						</EmojiPicker>
 						<!-- Disabled emoji picker placeholder button -->
-						<button v-else
-							type="button"
-							:disabled="true"
-							class="nc-button nc-button__main emoji-picker-button">
-							<EmoticonOutline
-								:size="16"
+						<Button v-else
+							type="tertiary"
+							:aria-label="t('spreed', 'Add emoji')"
+							:disabled="true">
+							<EmoticonOutline :size="16"
 								decorative
 								title="" />
-						</button>
+						</Button>
 					</div>
 					<div v-if="messageToBeReplied" class="new-message-form__quote">
-						<Quote
-							:is-new-message-form-quote="true"
+						<Quote :is-new-message-form-quote="true"
 							:parent-id="messageToBeReplied.id"
 							v-bind="messageToBeReplied" />
 					</div>
 
-					<AdvancedInput
-						ref="advancedInput"
+					<AdvancedInput ref="advancedInput"
 						v-model="text"
 						:token="token"
 						:active-input="!disabled"
@@ -117,24 +102,21 @@
 						@files-pasted="handlePastedFiles" />
 				</div>
 
-				<AudioRecorder
-					v-if="!hasText && canUploadFiles"
+				<AudioRecorder v-if="!hasText && canUploadFiles"
 					:disabled="disabled"
 					@recording="handleRecording"
 					@audio-file="handleAudioFile" />
 
-				<button
-					v-else
+				<Button v-else
 					:disabled="disabled"
-					type="submit"
+					type="tertiary"
+					native-type="submit"
 					:aria-label="t('spreed', 'Send message')"
-					class="nc-button nc-button__main new-message-form__send-button"
 					@click.prevent="handleSubmit">
-					<Send
-						title=""
+					<Send title=""
 						:size="16"
 						decorative />
-				</button>
+				</Button>
 			</form>
 		</div>
 	</div>
@@ -145,6 +127,7 @@ import AdvancedInput from './AdvancedInput/AdvancedInput'
 import { getFilePickerBuilder } from '@nextcloud/dialogs'
 import { getCapabilities } from '@nextcloud/capabilities'
 import Quote from '../Quote'
+import Button from '@nextcloud/vue/dist/Components/Button'
 import Actions from '@nextcloud/vue/dist/Components/Actions'
 import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
 import EmojiPicker from '@nextcloud/vue/dist/Components/EmojiPicker'
@@ -170,6 +153,7 @@ export default {
 		Quote,
 		Actions,
 		ActionButton,
+		Button,
 		Paperclip,
 		EmojiPicker,
 		EmoticonOutline,
@@ -396,7 +380,7 @@ export default {
 				await this.sleep(randomNumber)
 
 				const loremIpsum = 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.\n\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.'
-				this.parsedText = loremIpsum.substr(0, 25 + randomNumber)
+				this.parsedText = loremIpsum.slice(0, 25 + randomNumber)
 				await this.handleSubmit()
 			}
 		},
@@ -505,7 +489,7 @@ export default {
 				// is added the div content will be "<br><br>"), so the emoji
 				// has to be added before the last "<br>" (if any).
 				if (this.text.endsWith('<br>')) {
-					this.text = this.text.substr(0, this.text.lastIndexOf('<br>')) + emoji + '<br>'
+					this.text = this.text.slice(0, this.text.lastIndexOf('<br>')) + emoji + '<br>'
 				} else {
 					this.text += emoji
 				}
@@ -570,15 +554,6 @@ export default {
 			left: 5px;
 			bottom: 1px;
 			z-index: 1;
-			.emoji-picker-button {
-				opacity: .7;
-				&:hover,
-				&:active,
-				&:focus {
-					opacity: 1;
-					background-color: transparent;
-				}
-			}
 		}
 
 		&__input {

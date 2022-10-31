@@ -36,8 +36,7 @@
 				<div v-show="!enabled"
 					class="add-part-wrapper">
 					<span class="icon icon-add" />
-					<Multiselect
-						ref="partMultiselect"
+					<Multiselect ref="partMultiselect"
 						v-model="selectedType"
 						label="displayName"
 						track-by="type"
@@ -55,8 +54,7 @@
 				</div>
 				<div v-show="parts.length > 0"
 					class="enable-switch-line">
-					<input
-						id="enable-checkbox"
+					<input id="enable-checkbox"
 						type="checkbox"
 						class="checkbox"
 						:token="token"
@@ -66,8 +64,7 @@
 						{{ t('spreed', 'Enable bridge') }}
 						({{ processStateText }})
 					</label>
-					<button
-						v-if="enabled"
+					<button v-if="enabled"
 						v-tooltip.top="{ content: t('spreed', 'Show Matterbridge log') }"
 						class="icon icon-edit"
 						@click="showLogContent" />
@@ -82,8 +79,7 @@
 			</div>
 			<ul>
 				<li v-for="(part, i) in parts" :key="part.type + i">
-					<BridgePart
-						:num="i+1"
+					<BridgePart :num="i+1"
 						:part="part"
 						:type="types[part.type]"
 						:editing="part.editing"
@@ -109,7 +105,7 @@ import Modal from '@nextcloud/vue/dist/Components/Modal'
 import BridgePart from './BridgePart'
 
 import Vue from 'vue'
-import { Tooltip } from '@nextcloud/vue'
+import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip'
 Vue.directive('tooltip', Tooltip)
 
 export default {

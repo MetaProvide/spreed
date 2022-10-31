@@ -47,19 +47,12 @@ use OCP\AppFramework\Utility\IControllerMethodReflector;
 use OCP\IRequest;
 
 class InjectionMiddleware extends Middleware {
-
-	/** @var IRequest */
-	private $request;
-	/** @var IControllerMethodReflector */
-	private $reflector;
-	/** @var TalkSession */
-	private $talkSession;
-	/** @var Manager */
-	private $manager;
-	/** @var Throttler */
-	private $throttler;
-	/** @var ?string */
-	private $userId;
+	private IRequest $request;
+	private IControllerMethodReflector $reflector;
+	private TalkSession $talkSession;
+	private Manager $manager;
+	private Throttler $throttler;
+	private ?string $userId;
 
 	public function __construct(IRequest $request,
 								IControllerMethodReflector $reflector,
@@ -156,26 +149,32 @@ class InjectionMiddleware extends Middleware {
 	 * @throws ParticipantNotFoundException
 	 */
 	protected function getLoggedInOrGuest(AEnvironmentAwareController $controller, bool $moderatorRequired): void {
-		$token = $this->request->getParam('token');
-		$sessionId = $this->talkSession->getSessionForRoom($token);
-		$room = $this->manager->getRoomForUserByToken($token, $this->userId, $sessionId);
-		$controller->setRoom($room);
-		$participant = null;
+		$room = $controller->getRoom();
+		if (!$room instanceof Room) {
+			$token = $this->request->getParam('token');
+			$sessionId = $this->talkSession->getSessionForRoom($token);
+			$room = $this->manager->getRoomForUserByToken($token, $this->userId, $sessionId);
+			$controller->setRoom($room);
+		}
 
-		if ($sessionId !== null) {
-			try {
-				$participant = $room->getParticipantBySession($sessionId);
-			} catch (ParticipantNotFoundException $e) {
-				// ignore and fall back in case a concurrent request might have
-				// invalidated the session
+		$participant = $controller->getParticipant();
+		if (!$participant instanceof Participant) {
+			$participant = null;
+			if ($sessionId !== null) {
+				try {
+					$participant = $room->getParticipantBySession($sessionId);
+				} catch (ParticipantNotFoundException $e) {
+					// ignore and fall back in case a concurrent request might have
+					// invalidated the session
+				}
 			}
-		}
 
-		if ($participant === null) {
-			$participant = $room->getParticipant($this->userId);
-		}
+			if ($participant === null) {
+				$participant = $room->getParticipant($this->userId);
+			}
 
-		$controller->setParticipant($participant);
+			$controller->setParticipant($participant);
+		}
 
 		if ($moderatorRequired && !$participant->hasModeratorPermissions()) {
 			throw new NotAModeratorException();

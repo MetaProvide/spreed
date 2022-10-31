@@ -20,8 +20,7 @@
 -->
 
 <template>
-	<AppSettingsDialog
-		:open.sync="showSettings"
+	<AppSettingsDialog :open.sync="showSettings"
 		:show-navigation="true"
 		first-selected-section="keyboard shortcuts"
 		:container="container">
@@ -35,8 +34,7 @@
 			<h3 class="app-settings-section__hint">
 				{{ locationHint }}
 			</h3>
-			<input
-				type="text"
+			<input type="text"
 				class="app-settings-section__input"
 				:value="attachmentFolder"
 				:disabled="attachmentFolderLoading"
@@ -45,17 +43,16 @@
 		<AppSettingsSection v-if="!isGuest"
 			:title="t('spreed', 'Privacy')"
 			class="app-settings-section">
-			<input id="read_status_privacy"
+			<CheckboxRadioSwitch id="read_status_privacy"
 				:checked="readStatusPrivacyIsPublic"
 				:disabled="privacyLoading"
 				type="checkbox"
-				name="read_status_privacy"
 				class="checkbox"
-				@change="toggleReadStatusPrivacy">
-			<label for="read_status_privacy">{{ t('spreed', 'Share my read-status and show the read-status of others') }}</label>
+				@update:checked="toggleReadStatusPrivacy">
+				{{ t('spreed', 'Share my read-status and show the read-status of others') }}
+			</CheckboxRadioSwitch>
 		</AppSettingsSection>
-		<AppSettingsSection
-			:title="t('spreed', 'Sounds')"
+		<AppSettingsSection :title="t('spreed', 'Sounds')"
 			class="app-settings-section">
 			<input id="play_sounds"
 				:checked="playSounds"
@@ -65,6 +62,13 @@
 				@change="togglePlaySounds">
 			<label for="play_sounds">{{ t('spreed', 'Play sounds when participants join or leave a call') }}</label>
 			<em>{{ t('spreed', 'Sounds can currently not be played in Safari browser and iPad and iPhone devices due to technical restrictions by the manufacturer.') }}</em>
+
+			<a :href="settingsUrl"
+				target="_blank"
+				rel="noreferrer nofollow"
+				class="external">
+				{{ t('spreed', 'Sounds for chat and call notifications can be adjusted in the personal settings.') }} ↗
+			</a>
 		</AppSettingsSection>
 		<AppSettingsSection :title="t('spreed', 'Keyboard shortcuts')">
 			<em>{{ t('spreed', 'Speed up your Talk experience with these quick shortcuts.') }}</em>
@@ -101,7 +105,7 @@
 				<div>
 					<dt><kbd>V</kbd></dt>
 					<dd class="shortcut-description">
-						{{ t('spreed', 'Video on and off') }}
+						{{ t('spreed', 'Camera on and off') }}
 					</dd>
 				</div>
 				<div>
@@ -128,12 +132,14 @@
 </template>
 
 <script>
+import { generateUrl } from '@nextcloud/router'
 import { getFilePickerBuilder, showError, showSuccess } from '@nextcloud/dialogs'
 import { PRIVACY } from '../../constants'
 import { subscribe, unsubscribe } from '@nextcloud/event-bus'
 import MediaDevicesPreview from '../MediaDevicesPreview'
 import AppSettingsDialog from '@nextcloud/vue/dist/Components/AppSettingsDialog'
 import AppSettingsSection from '@nextcloud/vue/dist/Components/AppSettingsSection'
+import CheckboxRadioSwitch from '@nextcloud/vue/dist/Components/CheckboxRadioSwitch'
 
 export default {
 	name: 'SettingsDialog',
@@ -142,6 +148,7 @@ export default {
 		MediaDevicesPreview,
 		AppSettingsDialog,
 		AppSettingsSection,
+		CheckboxRadioSwitch,
 	},
 
 	data() {
@@ -180,6 +187,10 @@ export default {
 
 		readStatusPrivacy() {
 			return this.$store.getters.getReadStatusPrivacy()
+		},
+
+		settingsUrl() {
+			return generateUrl('/settings/user/notifications')
 		},
 	},
 

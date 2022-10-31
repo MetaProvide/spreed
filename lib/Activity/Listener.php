@@ -25,6 +25,7 @@ namespace OCA\Talk\Activity;
 
 use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Events\AddParticipantsEvent;
+use OCA\Talk\Events\ModifyEveryoneEvent;
 use OCA\Talk\Events\ModifyParticipantEvent;
 use OCA\Talk\Events\ModifyRoomEvent;
 use OCA\Talk\Events\RoomEvent;
@@ -40,24 +41,17 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 class Listener {
+	protected IManager $activityManager;
 
-	/** @var IManager */
-	protected $activityManager;
+	protected IUserSession $userSession;
 
-	/** @var IUserSession */
-	protected $userSession;
+	protected ChatManager $chatManager;
 
-	/** @var ChatManager */
-	protected $chatManager;
+	protected ParticipantService $participantService;
 
-	/** @var ParticipantService */
-	protected $participantService;
+	protected LoggerInterface $logger;
 
-	/** @var LoggerInterface */
-	protected $logger;
-
-	/** @var ITimeFactory */
-	protected $timeFactory;
+	protected ITimeFactory $timeFactory;
 
 	public function __construct(IManager $activityManager,
 								IUserSession $userSession,
@@ -76,21 +70,27 @@ class Listener {
 	public static function register(IEventDispatcher $dispatcher): void {
 		$listener = static function (ModifyParticipantEvent $event): void {
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 			$listener->setActive($event->getRoom(), $event->getParticipant());
 		};
 		$dispatcher->addListener(Room::EVENT_AFTER_SESSION_JOIN_CALL, $listener);
 
 		$listener = static function (ModifyRoomEvent $event): void {
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 			$listener->generateCallActivity($event->getRoom(), true, $event->getActor());
 		};
 		$dispatcher->addListener(Room::EVENT_BEFORE_END_CALL_FOR_EVERYONE, $listener);
 
 		$listener = static function (RoomEvent $event): void {
+			if ($event instanceof ModifyEveryoneEvent) {
+				// The call activity was generated already if the call is ended
+				// for everyone
+				return;
+			}
+
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 			$listener->generateCallActivity($event->getRoom());
 		};
 		$dispatcher->addListener(Room::EVENT_AFTER_PARTICIPANT_REMOVE, $listener);
@@ -100,7 +100,7 @@ class Listener {
 
 		$listener = static function (AddParticipantsEvent $event): void {
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 			$listener->generateInvitationActivity($event->getRoom(), $event->getParticipants());
 		};
 		$dispatcher->addListener(Room::EVENT_AFTER_USERS_ADD, $listener);
@@ -225,6 +225,11 @@ class Listener {
 			return;
 		}
 
+		// We know the new participant is in the room,
+		// so skip loading them just to make sure they can read it.
+		// Must be overwritten later on for one-to-one chats.
+		$roomName = $room->getDisplayName($actorId);
+
 		foreach ($participants as $participant) {
 			if ($participant['actorType'] !== Attendee::ACTOR_USERS) {
 				// No user => no activity
@@ -237,7 +242,10 @@ class Listener {
 			}
 
 			try {
-				$roomName = $room->getDisplayName($participant['actorId']);
+				if ($room->getType() === Room::TYPE_ONE_TO_ONE) {
+					// Overwrite the room name with the other participant
+					$roomName = $room->getDisplayName($participant['actorId']);
+				}
 				$event
 					->setObject('room', $room->getId(), $roomName)
 					->setSubject('invitation', [

@@ -35,13 +35,9 @@ use OCP\Search\SearchResult;
 use OCP\Search\SearchResultEntry;
 
 class ConversationSearch implements IProvider {
-
-	/** @var Manager */
-	protected $manager;
-	/** @var IURLGenerator */
-	protected $url;
-	/** @var IL10N */
-	protected $l;
+	protected Manager $manager;
+	protected IURLGenerator $url;
+	protected IL10N $l;
 
 	public function __construct(
 		Manager $manager,
@@ -125,7 +121,7 @@ class ConversationSearch implements IProvider {
 					if ($participantId !== $user->getUID()) {
 						$icon = $this->url->linkToRouteAbsolute('core.avatar.getAvatar', [
 							'userId' => $participantId,
-							'size' => 128,
+							'size' => 512,
 						]);
 					}
 				}

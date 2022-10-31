@@ -28,13 +28,16 @@ use OCA\Talk\Chat\AutoComplete\SearchPlugin;
 use OCA\Talk\Chat\AutoComplete\Sorter;
 use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Chat\MessageParser;
+use OCA\Talk\Chat\ReactionManager;
 use OCA\Talk\GuestManager;
 use OCA\Talk\MatterbridgeManager;
+use OCA\Talk\Model\Attachment;
 use OCA\Talk\Model\Attendee;
 use OCA\Talk\Model\Message;
 use OCA\Talk\Model\Session;
 use OCA\Talk\Participant;
 use OCA\Talk\Room;
+use OCA\Talk\Service\AttachmentService;
 use OCA\Talk\Service\ParticipantService;
 use OCA\Talk\Service\SessionService;
 use OCP\App\IAppManager;
@@ -53,68 +56,34 @@ use OCP\IUserManager;
 use OCP\RichObjectStrings\InvalidObjectExeption;
 use OCP\RichObjectStrings\IValidator;
 use OCP\Security\ITrustedDomainHelper;
+use OCP\Share\Exceptions\ShareNotFound;
 use OCP\User\Events\UserLiveStatusEvent;
 use OCP\UserStatus\IManager as IUserStatusManager;
 use OCP\UserStatus\IUserStatus;
 
 class ChatController extends AEnvironmentAwareController {
-
-	/** @var string */
-	private $userId;
-
-	/** @var IUserManager */
-	private $userManager;
-
-	/** @var IAppManager */
-	private $appManager;
-
-	/** @var ChatManager */
-	private $chatManager;
-
-	/** @var ParticipantService */
-	private $participantService;
-
-	/** @var SessionService */
-	private $sessionService;
-
-	/** @var GuestManager */
-	private $guestManager;
-
+	private ?string $userId;
+	private IUserManager $userManager;
+	private IAppManager $appManager;
+	private ChatManager $chatManager;
+	private ReactionManager $reactionManager;
+	private ParticipantService $participantService;
+	private SessionService $sessionService;
+	protected AttachmentService $attachmentService;
+	private GuestManager $guestManager;
 	/** @var string[] */
-	protected $guestNames;
-
-	/** @var MessageParser */
-	private $messageParser;
-
-	/** @var IManager */
-	private $autoCompleteManager;
-
-	/** @var IUserStatusManager */
-	private $statusManager;
-
-	/** @var MatterbridgeManager */
-	protected $matterbridgeManager;
-
-	/** @var SearchPlugin */
-	private $searchPlugin;
-
-	/** @var ISearchResult */
-	private $searchResult;
-
-	/** @var ITimeFactory */
-	protected $timeFactory;
-
-	/** @var IEventDispatcher */
-	protected $eventDispatcher;
-
-	/** @var IValidator */
-	protected $richObjectValidator;
-
-	/** @var ITrustedDomainHelper */
-	protected $trustedDomainHelper;
-
-	/** @var IL10N */
-	private $l;
+	protected array $guestNames;
+	private MessageParser $messageParser;
+	private IManager $autoCompleteManager;
+	private IUserStatusManager $statusManager;
+	protected MatterbridgeManager $matterbridgeManager;
+	private SearchPlugin $searchPlugin;
+	private ISearchResult $searchResult;
+	protected ITimeFactory $timeFactory;
+	protected IEventDispatcher $eventDispatcher;
+	protected IValidator $richObjectValidator;
+	protected ITrustedDomainHelper $trustedDomainHelper;
+	private IL10N $l;
 
 	public function __construct(string $appName,
 								?string $UserId,
@@ -122,8 +91,10 @@ class ChatController extends AEnvironmentAwareController {
 								IUserManager $userManager,
 								IAppManager $appManager,
 								ChatManager $chatManager,
+								ReactionManager $reactionManager,
 								ParticipantService $participantService,
 								SessionService $sessionService,
+								AttachmentService $attachmentService,
 								GuestManager $guestManager,
 								MessageParser $messageParser,
 								IManager $autoCompleteManager,
@@ -142,8 +113,10 @@ class ChatController extends AEnvironmentAwareController {
 		$this->userManager = $userManager;
 		$this->appManager = $appManager;
 		$this->chatManager = $chatManager;
+		$this->reactionManager = $reactionManager;
 		$this->participantService = $participantService;
 		$this->sessionService = $sessionService;
+		$this->attachmentService = $attachmentService;
 		$this->guestManager = $guestManager;
 		$this->messageParser = $messageParser;
 		$this->autoCompleteManager = $autoCompleteManager;
@@ -191,9 +164,9 @@ class ChatController extends AEnvironmentAwareController {
 
 		$this->participantService->updateLastReadMessage($this->participant, (int) $comment->getId());
 
-		$data = $chatMessage->toArray();
+		$data = $chatMessage->toArray($this->getResponseFormat());
 		if ($parentMessage instanceof Message) {
-			$data['parent'] = $parentMessage->toArray();
+			$data['parent'] = $parentMessage->toArray($this->getResponseFormat());
 		}
 
 		$response = new DataResponse($data, Http::STATUS_CREATED);
@@ -450,8 +423,8 @@ class ChatController extends AEnvironmentAwareController {
 					// As per "section 10.3.5 of RFC 2616" entity headers shall be
 					// stripped out on 304: https://stackoverflow.com/a/17822709
 					$response->setStatus(Http::STATUS_OK);
+					$response->addHeader('X-Chat-Last-Common-Read', $newLastCommonRead);
 				}
-				$response->addHeader('X-Chat-Last-Common-Read', $newLastCommonRead);
 			}
 			return $response;
 		}
@@ -472,7 +445,7 @@ class ChatController extends AEnvironmentAwareController {
 				$parentIds[$id] = $comment->getParentId();
 			}
 
-			$messages[] = $message->toArray();
+			$messages[] = $message->toArray($this->getResponseFormat());
 			$commentIdToIndex[$id] = $i;
 			$i++;
 		}
@@ -508,7 +481,7 @@ class ChatController extends AEnvironmentAwareController {
 					$this->messageParser->parseMessage($message);
 
 					if ($message->getVisibility()) {
-						$loadedParents[$parentId] = $message->toArray();
+						$loadedParents[$parentId] = $message->toArray($this->getResponseFormat());
 						$messages[$commentKey]['parent'] = $loadedParents[$parentId];
 						continue;
 					}
@@ -527,6 +500,8 @@ class ChatController extends AEnvironmentAwareController {
 				'deleted' => true,
 			];
 		}
+
+		$messages = $this->loadSelfReactions($messages, $commentIdToIndex);
 
 		$response = new DataResponse($messages, Http::STATUS_OK);
 
@@ -550,6 +525,50 @@ class ChatController extends AEnvironmentAwareController {
 		}
 
 		return $response;
+	}
+
+	protected function loadSelfReactions(array $messages, array $commentIdToIndex): array {
+		// Get message ids with reactions
+		$messageIdsWithReactions = array_map(
+			static fn (array $message) => $message['id'],
+			array_filter($messages, static fn (array $message) => !empty($message['reactions']))
+		);
+
+		// Get parents with reactions
+		$parentsWithReactions = array_map(
+			static fn (array $message) => ['parent' => $message['parent']['id'], 'message' => $message['id']],
+			array_filter($messages, static fn (array $message) => !empty($message['parent']['reactions']))
+		);
+
+		// Create a map, so we can translate the parent's $messageId to the correct child entries
+		$parentMap = $parentIdsWithReactions = [];
+		foreach ($parentsWithReactions as $entry) {
+			$parentMap[(int) $entry['parent']] ??= [];
+			$parentMap[(int) $entry['parent']][] = (int) $entry['message'];
+			$parentIdsWithReactions[] = (int) $entry['parent'];
+		}
+
+		// Unique list for the query
+		$idsWithReactions = array_unique(array_merge($messageIdsWithReactions, $parentIdsWithReactions));
+		$reactionsById = $this->reactionManager->getReactionsByActorForMessages($this->participant, $idsWithReactions);
+
+		// Inject the reactions self into the $messages array
+		foreach ($reactionsById as $messageId => $reactions) {
+			if (isset($commentIdToIndex[$messageId]) && isset($messages[$commentIdToIndex[$messageId]])) {
+				$messages[$commentIdToIndex[$messageId]]['reactionsSelf'] = $reactions;
+			}
+
+			// Add the self part also to potential parent elements
+			if (isset($parentMap[$messageId])) {
+				foreach ($parentMap[$messageId] as $mid) {
+					if (isset($messages[$commentIdToIndex[$mid]])) {
+						$messages[$commentIdToIndex[$mid]]['parent']['reactionsSelf'] = $reactions;
+					}
+				}
+			}
+		}
+
+		return $messages;
 	}
 
 	/**
@@ -581,8 +600,8 @@ class ChatController extends AEnvironmentAwareController {
 			return new DataResponse([], Http::STATUS_FORBIDDEN);
 		}
 
-		if ($message->getVerb() !== 'comment') {
-			// System message or file share (since the message is not parsed, it has type "system")
+		if ($message->getVerb() !== ChatManager::VERB_MESSAGE && $message->getVerb() !== ChatManager::VERB_OBJECT_SHARED) {
+			// System message (since the message is not parsed, it has type "system")
 			return new DataResponse([], Http::STATUS_METHOD_NOT_ALLOWED);
 		}
 
@@ -593,13 +612,16 @@ class ChatController extends AEnvironmentAwareController {
 			return new DataResponse([], Http::STATUS_BAD_REQUEST);
 		}
 
-		$systemMessageComment = $this->chatManager->deleteMessage(
-			$this->room,
-			$messageId,
-			$attendee->getActorType(),
-			$attendee->getActorId(),
-			$this->timeFactory->getDateTime()
-		);
+		try {
+			$systemMessageComment = $this->chatManager->deleteMessage(
+				$this->room,
+				$message,
+				$this->participant,
+				$this->timeFactory->getDateTime()
+			);
+		} catch (ShareNotFound $e) {
+			return new DataResponse([], Http::STATUS_NOT_FOUND);
+		}
 
 		$systemMessage = $this->messageParser->createMessage($this->room, $this->participant, $systemMessageComment, $this->l);
 		$this->messageParser->parseMessage($systemMessage);
@@ -608,8 +630,8 @@ class ChatController extends AEnvironmentAwareController {
 		$message = $this->messageParser->createMessage($this->room, $this->participant, $comment, $this->l);
 		$this->messageParser->parseMessage($message);
 
-		$data = $systemMessage->toArray();
-		$data['parent'] = $message->toArray();
+		$data = $systemMessage->toArray($this->getResponseFormat());
+		$data['parent'] = $message->toArray($this->getResponseFormat());
 
 		$bridge = $this->matterbridgeManager->getBridgeOfRoom($this->room);
 
@@ -645,7 +667,7 @@ class ChatController extends AEnvironmentAwareController {
 		$this->messageParser->parseMessage($systemMessage);
 
 
-		$data = $systemMessage->toArray();
+		$data = $systemMessage->toArray($this->getResponseFormat());
 
 		$bridge = $this->matterbridgeManager->getBridgeOfRoom($this->room);
 
@@ -670,6 +692,133 @@ class ChatController extends AEnvironmentAwareController {
 			$response->addHeader('X-Chat-Last-Common-Read', $this->chatManager->getLastCommonReadMessage($this->room));
 		}
 		return $response;
+	}
+
+	/**
+	 * @NoAdminRequired
+	 * @RequireParticipant
+	 *
+	 * @return DataResponse
+	 */
+	public function markUnread(): DataResponse {
+		$message = $this->room->getLastMessage();
+		$unreadId = 0;
+
+		if ($message instanceof IComment) {
+			try {
+				$previousMessage = $this->chatManager->getPreviousMessageWithVerb(
+					$this->room,
+					(int)$message->getId(),
+					['comment'],
+					$message->getVerb() === ChatManager::VERB_MESSAGE
+				);
+				$unreadId = (int) $previousMessage->getId();
+			} catch (NotFoundException $e) {
+				// No chat message found, only system messages.
+				// Marking unread from beginning
+			}
+		}
+
+		return $this->setReadMarker($unreadId);
+	}
+
+	/**
+	 * @PublicPage
+	 * @RequireParticipant
+	 * @RequireModeratorOrNoLobby
+	 *
+	 * @param int $limit
+	 * @return DataResponse
+	 */
+	public function getObjectsSharedInRoomOverview(int $limit = 7): DataResponse {
+		$limit = min(20, $limit);
+
+		$objectTypes = [
+			Attachment::TYPE_AUDIO,
+			Attachment::TYPE_DECK_CARD,
+			Attachment::TYPE_FILE,
+			Attachment::TYPE_LOCATION,
+			Attachment::TYPE_MEDIA,
+			Attachment::TYPE_OTHER,
+			Attachment::TYPE_VOICE,
+		];
+
+		$messages = [];
+		$messageIdsByType = [];
+		foreach ($objectTypes as $objectType) {
+			$attachments = $this->attachmentService->getAttachmentsByType($this->room, $objectType, 0, $limit);
+			$messageIdsByType[$objectType] = array_map(static fn (Attachment $attachment): int => $attachment->getMessageId(), $attachments);
+		}
+		$comments = $this->chatManager->getMessagesById($this->room, array_merge(...array_values($messageIdsByType)));
+
+		foreach ($comments as $comment) {
+			$message = $this->messageParser->createMessage($this->room, $this->participant, $comment, $this->l);
+			$this->messageParser->parseMessage($message);
+
+			if (!$message->getVisibility()) {
+				continue;
+			}
+
+			$messages[(int) $comment->getId()] = $message->toArray($this->getResponseFormat());
+		}
+
+		$messagesByType = [];
+		foreach ($objectTypes as $objectType) {
+			$messagesByType[$objectType] = [];
+
+			foreach ($messageIdsByType[$objectType] as $messageId) {
+				$messagesByType[$objectType][] = $messages[$messageId];
+			}
+		}
+
+		return new DataResponse($messagesByType, Http::STATUS_OK);
+	}
+
+	/**
+	 * @PublicPage
+	 * @RequireParticipant
+	 * @RequireModeratorOrNoLobby
+	 *
+	 * @param string $objectType
+	 * @param int $lastKnownMessageId
+	 * @param int $limit
+	 * @return DataResponse
+	 */
+	public function getObjectsSharedInRoom(string $objectType, int $lastKnownMessageId = 0, int $limit = 100): DataResponse {
+		$offset = max(0, $lastKnownMessageId);
+		$limit = min(200, $limit);
+
+		$attachments = $this->attachmentService->getAttachmentsByType($this->room, $objectType, $offset, $limit);
+		$messageIds = array_map(static fn (Attachment $attachment): int => $attachment->getMessageId(), $attachments);
+
+		$messages = $this->getMessagesForRoom($this->room, $messageIds);
+
+		$response = new DataResponse($messages, Http::STATUS_OK);
+
+		if (!empty($messages)) {
+			$newLastKnown = min(array_keys($messages));
+			$response->addHeader('X-Chat-Last-Given', $newLastKnown);
+		}
+
+		return $response;
+	}
+
+	protected function getMessagesForRoom(Room $room, array $messageIds): array {
+		$comments = $this->chatManager->getMessagesById($room, $messageIds);
+
+		$messages = [];
+		foreach ($comments as $comment) {
+			$message = $this->messageParser->createMessage($room, $this->participant, $comment, $this->l);
+			$this->messageParser->parseMessage($message);
+
+			if (!$message->getVisibility()) {
+				continue;
+			}
+
+			$messages[(int) $comment->getId()] = $message->toArray($this->getResponseFormat());
+		}
+
+		return $messages;
 	}
 
 	/**

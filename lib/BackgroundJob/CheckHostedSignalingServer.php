@@ -29,27 +29,22 @@ use OCA\Talk\DataObjects\AccountId;
 use OCA\Talk\Exceptions\HostedSignalingServerAPIException;
 use OCA\Talk\Service\HostedSignalingServerService;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IConfig;
+use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
 use OCP\Notification\IManager;
 use Psr\Log\LoggerInterface;
 
 class CheckHostedSignalingServer extends TimedJob {
-
-	/** @var HostedSignalingServerService */
-	private $hostedSignalingServerService;
-	/** @var IConfig */
-	private $config;
-	/** @var IManager */
-	private $notificationManager;
-	/** @var IGroupManager */
-	private $groupManager;
-	/** @var IURLGenerator */
-	private $urlGenerator;
-	/** @var LoggerInterface */
-	private $logger;
+	private HostedSignalingServerService $hostedSignalingServerService;
+	private IConfig $config;
+	private IManager $notificationManager;
+	private IGroupManager $groupManager;
+	private IURLGenerator $urlGenerator;
+	private LoggerInterface $logger;
 
 	public function __construct(ITimeFactory $timeFactory,
 								HostedSignalingServerService $hostedSignalingServerService,
@@ -59,7 +54,11 @@ class CheckHostedSignalingServer extends TimedJob {
 								IURLGenerator $urlGenerator,
 								LoggerInterface $logger) {
 		parent::__construct($timeFactory);
+
+		// Every hour
 		$this->setInterval(3600);
+		$this->setTimeSensitivity(IJob::TIME_SENSITIVE);
+
 		$this->hostedSignalingServerService = $hostedSignalingServerService;
 		$this->config = $config;
 		$this->notificationManager = $notificationManager;
@@ -144,8 +143,6 @@ class CheckHostedSignalingServer extends TimedJob {
 			$this->config->setAppValue('spreed', 'hosted-signaling-server-account', json_encode($accountInfo));
 		}
 
-		$this->config->setAppValue('spreed', 'hosted-signaling-server-account-last-checked', $this->time->getTime());
-
 		if (!is_null($notificationSubject)) {
 			$this->logger->info('Hosted signaling server background job caused a notification: ' . $notificationSubject . ' ' . json_encode($notificationParameters));
 
@@ -159,11 +156,14 @@ class CheckHostedSignalingServer extends TimedJob {
 				->setIcon($this->urlGenerator->getAbsoluteURL($this->urlGenerator->imagePath('spreed', 'app-dark.svg')))
 			;
 
-			$users = $this->groupManager->get('admin')->getUsers();
-			foreach ($users as $user) {
-				// Now add the new notification
-				$notification->setUser($user->getUID());
-				$this->notificationManager->notify($notification);
+			$adminGroup = $this->groupManager->get('admin');
+			if ($adminGroup instanceof IGroup) {
+				$users = $adminGroup->getUsers();
+				foreach ($users as $user) {
+					// Now add the new notification
+					$notification->setUser($user->getUID());
+					$this->notificationManager->notify($notification);
+				}
 			}
 		}
 	}

@@ -41,18 +41,17 @@ class Listener {
 
 	public static function listenPreShare(GenericEvent $event): void {
 		/** @var self $listener */
-		$listener = \OC::$server->query(self::class);
+		$listener = \OC::$server->get(self::class);
 		$listener->overwriteShareTarget($event);
 	}
 
 	public static function listenVerifyMountPointEvent(VerifyMountPointEvent $event): void {
 		/** @var self $listener */
-		$listener = \OC::$server->query(self::class);
+		$listener = \OC::$server->get(self::class);
 		$listener->overwriteMountPoint($event);
 	}
 
-	/** @var Config */
-	protected $config;
+	protected Config $config;
 
 	public function __construct(Config $config) {
 		$this->config = $config;

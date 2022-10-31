@@ -28,16 +28,14 @@
 		<div v-show="localMediaModel.attributes.videoEnabled"
 			:class="videoWrapperClass"
 			class="videoWrapper">
-			<video
-				id="localVideo"
+			<video id="localVideo"
 				ref="video"
 				disablePictureInPicture="true"
 				:class="videoClass"
 				class="video" />
 		</div>
 		<div v-if="!localMediaModel.attributes.videoEnabled && !isSidebar" class="avatar-container">
-			<VideoBackground
-				v-if="isGrid || isStripe"
+			<VideoBackground v-if="isGrid || isStripe"
 				:display-name="displayName"
 				:user="userId" />
 			<Avatar v-if="userId"
@@ -57,8 +55,7 @@
 
 		<div v-if="mouseover && isSelectable" class="hover-shadow" />
 		<div class="bottom-bar">
-			<button
-				v-if="isBig"
+			<button v-if="isBig"
 				class="bottom-bar__button"
 				@click="handleStopFollowing">
 				{{ stopFollowingLabel }}
@@ -244,7 +241,7 @@ export default {
 						this.notificationHandle = showError(t('spreed', 'Access to camera was denied'))
 					} else if (error.name === 'NotReadableError' || error.name === 'AbortError') {
 						// when camera in use, Chrome gives NotReadableError, Firefox gives AbortError
-						this.notificationHandle = showError(t('spreed', 'Error while accessing camera: it is likely in use by another program'), {
+						this.notificationHandle = showError(t('spreed', 'Error while accessing camera: It is likely in use by another program'), {
 							timeout: TOAST_PERMANENT_TIMEOUT,
 						})
 					} else {
@@ -309,8 +306,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../../assets/variables.scss';
-@import '../../../assets/avatar.scss';
+@import '../../../assets/variables';
+@import '../../../assets/avatar';
 @include avatar-mixin(64px);
 @include avatar-mixin(128px);
 

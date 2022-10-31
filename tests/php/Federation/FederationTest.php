@@ -24,6 +24,7 @@ namespace OCA\Talk\Tests\php\Federation;
 
 use OC\Federation\CloudFederationShare;
 use OCA\FederatedFileSharing\AddressHandler;
+use OCA\Talk\Config;
 use OCA\Talk\Federation\CloudFederationProviderTalk;
 use OCA\Talk\Federation\FederationManager;
 use OCA\Talk\Federation\Notifications;
@@ -42,35 +43,36 @@ use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
+use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Test\TestCase;
 
 class FederationTest extends TestCase {
-	/** @var FederationManager */
-	protected $federationManager;
+	protected ?FederationManager $federationManager = null;
 
-	/** @var Notifications */
-	protected $notifications;
+	protected ?Notifications $notifications = null;
 
-	/** @var ICloudFederationProviderManager */
+	/** @var ICloudFederationProviderManager|MockObject */
 	protected $cloudFederationProviderManager;
 
-	/** @var ICloudFederationFactory */
+	/** @var ICloudFederationFactory|MockObject */
 	protected $cloudFederationFactory;
 
-	/** @var AddressHandler */
+	/** @var Config|MockObject */
+	protected $config;
+
+	/** @var AddressHandler|MockObject */
 	protected $addressHandler;
 
-	/** @var CloudFederationProviderTalk */
-	protected $cloudFederationProvider;
+	protected ?CloudFederationProviderTalk $cloudFederationProvider = null;
 
-	/** @var IUserManager */
+	/** @var IUserManager|MockObject */
 	protected $userManager;
 
-	/** @var INotificationManager */
+	/** @var INotificationManager|MockObject */
 	protected $notificationManager;
 
-	/** @var AttendeeMapper */
+	/** @var AttendeeMapper|MockObject */
 	protected $attendeeMapper;
 
 	public function setUp(): void {
@@ -81,6 +83,7 @@ class FederationTest extends TestCase {
 		$this->addressHandler = $this->createMock(AddressHandler::class);
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->attendeeMapper = $this->createMock(AttendeeMapper::class);
+		$this->config = $this->createMock(Config::class);
 
 		$this->notifications = new Notifications(
 			$this->cloudFederationFactory,
@@ -98,6 +101,7 @@ class FederationTest extends TestCase {
 			$this->userManager,
 			$this->addressHandler,
 			$this->federationManager,
+			$this->config,
 			$this->notificationManager,
 			$this->createMock(IURLGenerator::class),
 			$this->createMock(ParticipantService::class),
@@ -230,7 +234,7 @@ class FederationTest extends TestCase {
 			->with($shareWithUser, $providerId, $roomType, $roomName, $name, $remote, $token)
 			->willReturn(20);
 
-		$this->federationManager->method('isEnabled')
+		$this->config->method('isFederationEnabled')
 			->willReturn(true);
 
 		$this->addressHandler->expects($this->once())

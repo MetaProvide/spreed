@@ -26,6 +26,7 @@ namespace OCA\Talk\Tests\php\Controller;
 use OCA\Talk\Chat\AutoComplete\SearchPlugin;
 use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Chat\MessageParser;
+use OCA\Talk\Chat\ReactionManager;
 use OCA\Talk\Controller\ChatController;
 use OCA\Talk\GuestManager;
 use OCA\Talk\MatterbridgeManager;
@@ -33,6 +34,7 @@ use OCA\Talk\Model\Attendee;
 use OCA\Talk\Model\Message;
 use OCA\Talk\Participant;
 use OCA\Talk\Room;
+use OCA\Talk\Service\AttachmentService;
 use OCA\Talk\Service\ParticipantService;
 use OCA\Talk\Service\SessionService;
 use OCP\App\IAppManager;
@@ -55,19 +57,21 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Test\TestCase;
 
 class ChatControllerTest extends TestCase {
-
-	/** @var string */
-	private $userId;
+	private ?string $userId = null;
 	/** @var IUserManager|MockObject */
 	protected $userManager;
 	/** @var IAppManager|MockObject */
 	private $appManager;
 	/** @var ChatManager|MockObject */
 	protected $chatManager;
+	/** @var ReactionManager|MockObject */
+	protected $reactionManager;
 	/** @var ParticipantService|MockObject */
 	protected $participantService;
 	/** @var SessionService|MockObject */
 	protected $sessionService;
+	/** @var AttachmentService|MockObject */
+	protected $attachmentService;
 	/** @var GuestManager|MockObject */
 	protected $guestManager;
 	/** @var MessageParser|MockObject */
@@ -96,8 +100,7 @@ class ChatControllerTest extends TestCase {
 	/** @var Room|MockObject */
 	protected $room;
 
-	/** @var ChatController */
-	private $controller;
+	private ?ChatController $controller = null;
 
 	/** @var Callback */
 	private $newMessageDateTimeConstraint;
@@ -109,8 +112,10 @@ class ChatControllerTest extends TestCase {
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->chatManager = $this->createMock(ChatManager::class);
+		$this->reactionManager = $this->createMock(ReactionManager::class);
 		$this->participantService = $this->createMock(ParticipantService::class);
 		$this->sessionService = $this->createMock(SessionService::class);
+		$this->attachmentService = $this->createMock(AttachmentService::class);
 		$this->guestManager = $this->createMock(GuestManager::class);
 		$this->messageParser = $this->createMock(MessageParser::class);
 		$this->autoCompleteManager = $this->createMock(IManager::class);
@@ -144,8 +149,10 @@ class ChatControllerTest extends TestCase {
 			$this->userManager,
 			$this->appManager,
 			$this->chatManager,
+			$this->reactionManager,
 			$this->participantService,
 			$this->sessionService,
+			$this->attachmentService,
 			$this->guestManager,
 			$this->messageParser,
 			$this->autoCompleteManager,

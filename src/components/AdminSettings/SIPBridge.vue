@@ -35,8 +35,7 @@
 				{{ t('spreed', 'Only users of the following groups can enable SIP in conversations they moderate') }}
 			</p>
 
-			<Multiselect
-				v-model="sipGroups"
+			<Multiselect v-model="sipGroups"
 				class="sip-bridge__sip-groups-select"
 				:options="groups"
 				:placeholder="t('spreed', 'Enable SIP configuration')"
@@ -67,8 +66,7 @@
 				{{ t('spreed', 'This information is sent in invitation emails as well as displayed in the sidebar to all participants.') }}
 			</p>
 
-			<textarea
-				v-model="dialInInfo"
+			<textarea v-model="dialInInfo"
 				name="message"
 				class="sip-bridge__dialin-info"
 				rows="4"

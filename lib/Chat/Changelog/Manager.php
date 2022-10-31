@@ -31,19 +31,12 @@ use OCP\IDBConnection;
 use OCP\IL10N;
 
 class Manager {
-
-	/** @var IConfig */
-	protected $config;
-	/** @var IDBConnection */
-	protected $connection;
-	/** @var RoomManager */
-	protected $roomManager;
-	/** @var ChatManager */
-	protected $chatManager;
-	/** @var ITimeFactory */
-	protected $timeFactory;
-	/** @var IL10N */
-	protected $l;
+	protected IConfig $config;
+	protected IDBConnection $connection;
+	protected RoomManager $roomManager;
+	protected ChatManager $chatManager;
+	protected ITimeFactory $timeFactory;
+	protected IL10N $l;
 
 	public function __construct(IConfig $config,
 								IDBConnection $connection,
@@ -123,6 +116,9 @@ class Manager {
 			$this->l->t('- A preview of your audio and video is shown before joining a call'),
 			$this->l->t('- You can now blur your background in the newly designed call view'),
 			$this->l->t('- Moderators can now assign general and individual permissions to participants'),
+			$this->l->t('New in Talk %s', ['14']),
+			$this->l->t('- You can now react to chat message'),
+			$this->l->t('- In the sidebar you can now find an overview of the latest shared items'),
 		];
 	}
 }

@@ -53,38 +53,22 @@ use OCP\Security\ISecureRandom;
 class Manager {
 	public const EVENT_TOKEN_GENERATE = self::class . '::generateNewToken';
 
-	/** @var IDBConnection */
-	private $db;
-	/** @var IConfig */
-	private $config;
-	/** @var Config */
-	private $talkConfig;
-	/** @var IAppManager */
-	private $appManager;
-	/** @var AttendeeMapper */
-	private $attendeeMapper;
-	/** @var SessionMapper */
-	private $sessionMapper;
-	/** @var ParticipantService */
-	private $participantService;
-	/** @var ISecureRandom */
-	private $secureRandom;
-	/** @var IUserManager */
-	private $userManager;
-	/** @var IGroupManager */
-	private $groupManager;
-	/** @var ICommentsManager */
-	private $commentsManager;
-	/** @var TalkSession */
-	private $talkSession;
-	/** @var IEventDispatcher */
-	private $dispatcher;
-	/** @var ITimeFactory */
-	protected $timeFactory;
-	/** @var IHasher */
-	private $hasher;
-	/** @var IL10N */
-	private $l;
+	private IDBConnection $db;
+	private IConfig $config;
+	private Config $talkConfig;
+	private IAppManager $appManager;
+	private AttendeeMapper $attendeeMapper;
+	private SessionMapper $sessionMapper;
+	private ParticipantService $participantService;
+	private ISecureRandom $secureRandom;
+	private IUserManager $userManager;
+	private IGroupManager $groupManager;
+	private ICommentsManager $commentsManager;
+	private TalkSession $talkSession;
+	private IEventDispatcher $dispatcher;
+	protected ITimeFactory $timeFactory;
+	private IHasher $hasher;
+	private IL10N $l;
 
 	public function __construct(IDBConnection $db,
 								IConfig $config,
@@ -186,7 +170,8 @@ class Manager {
 			(string) $row['name'],
 			(string) $row['description'],
 			(string) $row['password'],
-			(string) $row['server_url'],
+			(string) $row['remote_server'],
+			(string) $row['remote_token'],
 			(int) $row['active_guests'],
 			(int) $row['default_permissions'],
 			(int) $row['call_permissions'],
@@ -233,6 +218,7 @@ class Manager {
 			'reference_id' => $row['comment_reference_id'] ?? null,
 			'creation_timestamp' => $row['comment_creation_timestamp'],
 			'latest_child_timestamp' => $row['comment_latest_child_timestamp'],
+			'reactions' => $row['comment_reactions'],
 		]);
 	}
 
@@ -387,6 +373,25 @@ class Manager {
 		$result->closeCursor();
 
 		return $rooms;
+	}
+
+	public function removeUserFromAllRooms(IUser $user): void {
+		$rooms = $this->getRoomsForUser($user->getUID());
+		foreach ($rooms as $room) {
+			if ($this->participantService->getNumberOfUsers($room) === 1) {
+				$room->deleteRoom();
+			} else {
+				$this->participantService->removeUser($room, $user, Room::PARTICIPANT_REMOVED);
+			}
+		}
+
+		$leftRooms = $this->getLeftOneToOneRoomsForUser($user->getUID());
+		foreach ($leftRooms as $room) {
+			// We are changing the room type and name so a potential follow up
+			// user with the same user-id can not reopen the one-to-one conversation.
+			$room->setType(Room::TYPE_GROUP, true);
+			$room->setName($user->getDisplayName(), '');
+		}
 	}
 
 	/**
@@ -642,13 +647,15 @@ class Manager {
 				$query->expr()->eq('a.actor_type', $query->createNamedParameter($actorType)),
 				$query->expr()->eq('a.actor_id', $query->createNamedParameter($actorId)),
 				$query->expr()->eq('a.room_id', 'r.id')
-			))
-			->where($query->expr()->eq('r.token', $query->createNamedParameter($token)));
+			));
+
 
 		if ($serverUrl === null) {
-			$query->andWhere($query->expr()->isNull('r.server_url'));
+			$query->where($query->expr()->eq('r.token', $query->createNamedParameter($token)));
 		} else {
-			$query->andWhere($query->expr()->eq('r.server_url', $query->createNamedParameter($serverUrl)));
+			$query
+				->where($query->expr()->eq('r.remote_token', $query->createNamedParameter($token)))
+				->andWhere($query->expr()->eq('r.remote_server', $query->createNamedParameter($serverUrl)));
 		}
 
 		if ($sessionId !== null) {
@@ -682,7 +689,7 @@ class Manager {
 
 	/**
 	 * @param string $token
-	 * @param string|null $preloadUserId Load this participants information if possible
+	 * @param string|null $preloadUserId Load this participant's information if possible
 	 * @return Room
 	 * @throws RoomNotFoundException
 	 */
@@ -695,13 +702,14 @@ class Manager {
 		$query = $this->db->getQueryBuilder();
 		$helper = new SelectHelper();
 		$helper->selectRoomsTable($query);
-		$query->from('talk_rooms', 'r')
-			->where($query->expr()->eq('r.token', $query->createNamedParameter($token)));
+		$query->from('talk_rooms', 'r');
 
 		if ($serverUrl === null) {
-			$query->andWhere($query->expr()->isNull('r.server_url'));
+			$query->where($query->expr()->eq('r.token', $query->createNamedParameter($token)));
 		} else {
-			$query->andWhere($query->expr()->eq('r.server_url', $query->createNamedParameter($serverUrl)));
+			$query
+				->where($query->expr()->eq('r.remote_token', $query->createNamedParameter($token)))
+				->andWhere($query->expr()->eq('r.remote_server', $query->createNamedParameter($serverUrl)));
 		}
 
 
@@ -865,7 +873,7 @@ class Manager {
 			$room->setListable(Room::LISTABLE_NONE);
 
 			$user = $this->userManager->get($userId);
-			$this->participantService->addUsers($room,[[
+			$this->participantService->addUsers($room, [[
 				'actorType' => Attendee::ACTOR_USERS,
 				'actorId' => $userId,
 				'displayName' => $user ? $user->getDisplayName() : $userId,
@@ -879,7 +887,7 @@ class Manager {
 			$room->getParticipant($userId, false);
 		} catch (ParticipantNotFoundException $e) {
 			$user = $this->userManager->get($userId);
-			$this->participantService->addUsers($room,[[
+			$this->participantService->addUsers($room, [[
 				'actorType' => Attendee::ACTOR_USERS,
 				'actorId' => $userId,
 				'displayName' => $user ? $user->getDisplayName() : $userId,
@@ -931,7 +939,9 @@ class Manager {
 	 * @return Room
 	 * @throws DBException
 	 */
-	public function createRemoteRoom(int $type, string $name, string $token, string $serverUrl): Room {
+	public function createRemoteRoom(int $type, string $name, string $remoteToken, string $remoteServer): Room {
+		$token = $this->getNewToken();
+
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->insert('talk_rooms')
@@ -939,7 +949,8 @@ class Manager {
 				'name' => $qb->createNamedParameter($name),
 				'type' => $qb->createNamedParameter($type, IQueryBuilder::PARAM_INT),
 				'token' => $qb->createNamedParameter($token),
-				'server_url' => $qb->createNamedParameter($serverUrl),
+				'remote_token' => $qb->createNamedParameter($remoteToken),
+				'remote_server' => $qb->createNamedParameter($remoteServer),
 			]);
 
 		$qb->executeStatement();
@@ -1149,7 +1160,7 @@ class Manager {
 	}
 
 	protected function loadLastMessageInfo(IQueryBuilder $query): void {
-		$query->leftJoin('r','comments', 'c', $query->expr()->eq('r.last_message', 'c.id'));
+		$query->leftJoin('r', 'comments', 'c', $query->expr()->eq('r.last_message', 'c.id'));
 		$query->selectAlias('c.id', 'comment_id');
 		$query->selectAlias('c.parent_id', 'comment_parent_id');
 		$query->selectAlias('c.topmost_parent_id', 'comment_topmost_parent_id');
@@ -1166,5 +1177,6 @@ class Manager {
 		}
 		$query->selectAlias('c.creation_timestamp', 'comment_creation_timestamp');
 		$query->selectAlias('c.latest_child_timestamp', 'comment_latest_child_timestamp');
+		$query->selectAlias('c.reactions', 'comment_reactions');
 	}
 }
