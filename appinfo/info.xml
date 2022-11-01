@@ -55,16 +55,6 @@ And in the works for the [coming versions](https://github.com/nextcloud/spreed/m
 		<nextcloud min-version="23" max-version="23" />
 	</dependencies>
 
-	<navigations>
-		<navigation>
-			<id>spreed</id>
-			<name>Talk</name>
-			<route>spreed.view.index</route>
-			<icon>app.svg</icon>
-			<order>4</order>
-		</navigation>
-	</navigations>
-
 	<background-jobs>
 		<job>OCA\Talk\BackgroundJob\ExpireSignalingMessage</job>
 		<job>OCA\Talk\BackgroundJob\RemoveEmptyRooms</job>
