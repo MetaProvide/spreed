@@ -407,10 +407,10 @@ export default {
 		},
 
 		/**
-		 * Set the page title to the conversation name
+		 *		 Set the page title to the conversation name		 *		 * @param {string} title Prefix for the page title e.g. conversation name		 * @param {boolean} showAsterix Prefix for the page title e.g. conversation name
 		 *
-		 * @param {string} title Prefix for the page title e.g. conversation name
-		 * @param {boolean} showAsterix Prefix for the page title e.g. conversation name
+		 * @param title
+		 * @param showAsterix
 		 */
 		setPageTitle(title, showAsterix) {
 			if (this.defaultPageTitle === false) {
@@ -443,10 +443,9 @@ export default {
 		},
 
 		/**
-		 * Get a conversation's name.
+		 *		 Get a conversation's name.		 *		 * @param {string} token The conversation's token		 * @return {string} The conversation's name
 		 *
-		 * @param {string} token The conversation's token
-		 * @return {string} The conversation's name
+		 * @param token
 		 */
 		getConversationName(token) {
 			if (!this.$store.getters.conversation(token)) {
@@ -461,8 +460,8 @@ export default {
 
 			try {
 				/**
-				 * Fetches a single conversation
-				 */
+ * Fetches a single conversation
+ */
 				await this.$store.dispatch('fetchConversation', { token })
 
 				/**
