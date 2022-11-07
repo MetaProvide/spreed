@@ -348,9 +348,9 @@ export default {
 		},
 
 		/**
-		 *		 Set the notification level for the conversation		 *		 * @param {number} level The notification level to set.
+		 * Set the notification level for the conversation
 		 *
-		 * @param level
+		 * @param {number} level The notification level to set.
 		 */
 		async setNotificationLevel(level) {
 			await this.$store.dispatch('setNotificationLevel', { token: this.item.token, notificationLevel: level })

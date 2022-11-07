@@ -43,9 +43,9 @@ export default {
 	},
 	methods: {
 		/**
-		 *		 Emits the input event with the checked bulean as a value		 *		 * @param {object} event The checkbox click event object.
+		 * Emits the input event with the checked bulean as a value
 		 *
-		 * @param event
+		 * @param {object} event The checkbox click event object.
 		 */
 		handleInput(event) {
 			this.$emit('input', event.target.checked)

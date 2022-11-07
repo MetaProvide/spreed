@@ -36,9 +36,6 @@ describe('Video.vue', () => {
 
 	let callParticipantModel
 
-	/**
-	 *
-	 */
 	function PeerMock() {
 		this._superEmitterMixin()
 
@@ -112,9 +109,6 @@ describe('Video.vue', () => {
 		// created at the beginning of each test "await Vue.nextTick()" would
 		// need to be called instead (and for that the tests would need to be
 		// async).
-		/**
-		 *
-		 */
 		function setupWrapper() {
 			wrapper = shallowMount(Video, {
 				localVue,
@@ -132,9 +126,6 @@ describe('Video.vue', () => {
 			})
 		}
 
-		/**
-		 * @param expectedText
-		 */
 		function assertConnectionMessageLabel(expectedText) {
 			const connectionMessageLabel = wrapper.find('.connection-message')
 			if (expectedText) {
@@ -145,17 +136,11 @@ describe('Video.vue', () => {
 			}
 		}
 
-		/**
-		 * @param expected
-		 */
 		function assertLoadingIconIsShown(expected) {
 			const loadingIcon = wrapper.find('.icon-loading')
 			expect(loadingIcon.exists()).toBe(expected)
 		}
 
-		/**
-		 * @param expected
-		 */
 		function assertNotConnected(expected) {
 			const notConnected = wrapper.find('.not-connected')
 			expect(notConnected.exists()).toBe(expected)

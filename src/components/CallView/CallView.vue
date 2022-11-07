@@ -416,9 +416,14 @@ export default {
 	},
 	methods: {
 		/**
-		 *		 Updates data properties that depend on the CallParticipantModels.		 *		 * The data contains some properties that can not be dynamically		 * computed but that depend on the current CallParticipantModels, so		 * this function adds and removes elements and watchers as needed based		 * on the given CallParticipantModels.		 *		 * @param {Array} models the array of CallParticipantModels
+		 * Updates data properties that depend on the CallParticipantModels.
 		 *
-		 * @param models
+		 * The data contains some properties that can not be dynamically
+		 * computed but that depend on the current CallParticipantModels, so
+		 * this function adds and removes elements and watchers as needed based
+		 * on the given CallParticipantModels.
+		 *
+		 * @param {Array} models the array of CallParticipantModels
 		 */
 		updateDataFromCallParticipantModels(models) {
 			const addedModels = models.filter(model => !this.sharedDatas[model.attributes.peerId])

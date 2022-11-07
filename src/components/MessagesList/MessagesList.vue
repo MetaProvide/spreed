@@ -281,10 +281,23 @@ export default {
 
 	methods: {
 		/**
-		 *		 Compare two messages to decide if they should be grouped		 *		 * @param {object} message1 The new message		 * @param {string} message1.id The ID of the new message		 * @param {string} message1.actorType Actor type of the new message		 * @param {string} message1.actorId Actor id of the new message		 * @param {string} message1.actorDisplayName Actor displayname of the new message		 * @param {string} message1.systemMessage System message content of the new message		 * @param {number} message1.timestamp Timestamp of the new message		 * @param {null|object} message2 The previous message		 * @param {string} message2.id The ID of the second message		 * @param {string} message2.actorType Actor type of the previous message		 * @param {string} message2.actorId Actor id of the previous message		 * @param {string} message2.actorDisplayName Actor display name of previous message		 * @param {string} message2.systemMessage System message content of the previous message		 * @param {number} message2.timestamp Timestamp of the second message		 * @return {boolean} Boolean if the messages should be grouped or not
+		 * Compare two messages to decide if they should be grouped
 		 *
-		 * @param message1
-		 * @param message2
+		 * @param {object} message1 The new message
+		 * @param {string} message1.id The ID of the new message
+		 * @param {string} message1.actorType Actor type of the new message
+		 * @param {string} message1.actorId Actor id of the new message
+		 * @param {string} message1.actorDisplayName Actor displayname of the new message
+		 * @param {string} message1.systemMessage System message content of the new message
+		 * @param {number} message1.timestamp Timestamp of the new message
+		 * @param {null|object} message2 The previous message
+		 * @param {string} message2.id The ID of the second message
+		 * @param {string} message2.actorType Actor type of the previous message
+		 * @param {string} message2.actorId Actor id of the previous message
+		 * @param {string} message2.actorDisplayName Actor display name of previous message
+		 * @param {string} message2.systemMessage System message content of the previous message
+		 * @param {number} message2.timestamp Timestamp of the second message
+		 * @return {boolean} Boolean if the messages should be grouped or not
 		 */
 		messagesShouldBeGrouped(message1, message2) {
 			if (!message2) {
@@ -316,20 +329,28 @@ export default {
 		},
 
 		/**
- *		 Check if 2 messages are from the same date		 *		 * @param {object} message1 The new message		 * @param {string} message1.id The ID of the new message		 * @param {number} message1.timestamp Timestamp of the new message		 * @param {null|object} message2 The previous message		 * @param {string} message2.id The ID of the second message		 * @param {number} message2.timestamp Timestamp of the second message		 * @return {boolean} Boolean if the messages have the same date
- *
- * @param message1
- * @param message2
- */
+		 * Check if 2 messages are from the same date
+		 *
+		 * @param {object} message1 The new message
+		 * @param {string} message1.id The ID of the new message
+		 * @param {number} message1.timestamp Timestamp of the new message
+		 * @param {null|object} message2 The previous message
+		 * @param {string} message2.id The ID of the second message
+		 * @param {number} message2.timestamp Timestamp of the second message
+		 * @return {boolean} Boolean if the messages have the same date
+		 */
 		messagesHaveDifferentDate(message1, message2) {
 			return !message2 // There is no previous message
 				|| this.getDateOfMessage(message1).format('YYYY-MM-DD') !== this.getDateOfMessage(message2).format('YYYY-MM-DD')
 		},
 
 		/**
-		 *		 Generate the date header between the messages		 *		 * @param {object} message The message object		 * @param {string} message.id The ID of the message		 * @param {number} message.timestamp Timestamp of the message		 * @return {string} Translated string of "<Today>, <November 11th, 2019>", "<3 days ago>, <November 8th, 2019>"
+		 * Generate the date header between the messages
 		 *
-		 * @param message
+		 * @param {object} message The message object
+		 * @param {string} message.id The ID of the message
+		 * @param {number} message.timestamp Timestamp of the message
+		 * @return {string} Translated string of "<Today>, <November 11th, 2019>", "<3 days ago>, <November 8th, 2019>"
 		 */
 		generateDateSeparator(message) {
 			const date = this.getDateOfMessage(message)
@@ -359,9 +380,12 @@ export default {
 		},
 
 		/**
-		 *		 Generate the date of the messages		 *		 * @param {object} message The message object		 * @param {string} message.id The ID of the message		 * @param {number} message.timestamp Timestamp of the message		 * @return {object} MomentJS object
+		 * Generate the date of the messages
 		 *
-		 * @param message
+		 * @param {object} message The message object
+		 * @param {string} message.id The ID of the message
+		 * @param {number} message.timestamp Timestamp of the message
+		 * @return {object} MomentJS object
 		 */
 		getDateOfMessage(message) {
 			if (message.id.toString().startsWith('temp-')) {
@@ -470,9 +494,9 @@ export default {
 		},
 
 		/**
-		 *		 Get messages history.		 *		 * @param {boolean} includeLastKnown Include or exclude the last known message in the response
+		 * Get messages history.
 		 *
-		 * @param includeLastKnown
+		 * @param {boolean} includeLastKnown Include or exclude the last known message in the response
 		 */
 		async getOldMessages(includeLastKnown) {
 			// Make the request
@@ -494,9 +518,9 @@ export default {
 		},
 
 		/**
-		 *		 Creates a long polling request for a new message.		 *		 * @param {boolean} scrollToBottom Whether we should try to automatically scroll to the bottom
+		 * Creates a long polling request for a new message.
 		 *
-		 * @param scrollToBottom
+		 * @param {boolean} scrollToBottom Whether we should try to automatically scroll to the bottom
 		 */
 		async getNewMessages(scrollToBottom = true) {
 			if (this.destroying) {
@@ -597,9 +621,13 @@ export default {
 		},
 
 		/**
-		 *		 Finds the last message that is fully visible in the scroller viewport		 *		 * Starts searching forward after the given message element until we reach		 * the bottom of the viewport.		 *		 * @param {object} messageEl message element after which to start searching		 * @return {object} DOM element for the last visible message
+		 * Finds the last message that is fully visible in the scroller viewport
 		 *
-		 * @param messageEl
+		 * Starts searching forward after the given message element until we reach
+		 * the bottom of the viewport.
+		 *
+		 * @param {object} messageEl message element after which to start searching
+		 * @return {object} DOM element for the last visible message
 		 */
 		findFirstVisibleMessage(messageEl) {
 			let el = messageEl
@@ -718,9 +746,8 @@ export default {
 		},
 
 		/**
-		 *		 @param {object} options Event options		 * @param {boolean} options.force Set to true, if the chat should be scrolled to the bottom even when it was not before
-		 *
-		 * @param options
+		 * @param {object} options Event options
+		 * @param {boolean} options.force Set to true, if the chat should be scrolled to the bottom even when it was not before
 		 */
 		handleScrollChatToBottomEvent(options) {
 			if ((options && options.force) || this.isChatScrolledToBottom) {
@@ -766,11 +793,12 @@ export default {
 		},
 
 		/**
-		 *		 Temporarily highlight the given message id with a fade out effect.		 *		 * @param {string} messageId message id		 * @param {boolean} smooth true to smooth scroll, false to jump directly		 * @param {boolean} highlightAnimation true to highlight and set focus to the message		 * @return {boolean} true if element was found, false otherwise
+		 * Temporarily highlight the given message id with a fade out effect.
 		 *
-		 * @param messageId
-		 * @param smooth
-		 * @param highlightAnimation
+		 * @param {string} messageId message id
+		 * @param {boolean} smooth true to smooth scroll, false to jump directly
+		 * @param {boolean} highlightAnimation true to highlight and set focus to the message
+		 * @return {boolean} true if element was found, false otherwise
 		 */
 		focusMessage(messageId, smooth = true, highlightAnimation = true) {
 			const element = document.getElementById(`message_${messageId}`)

@@ -26,7 +26,8 @@
 		:show-navigation="true"
 		:container="container">
 		<!-- description -->
-		<AppSettingsSection v-if="showDescription" :title="t('spreed', 'Description')">
+		<AppSettingsSection v-if="showDescription"
+			:title="t('spreed', 'Description')">
 			<Description :editable="canFullModerate"
 				:description="description"
 				:editing="isEditingDescription"
@@ -44,17 +45,13 @@
 		<!-- Devices preview sceren -->
 		<AppSettingsSection :title="t('spreed', 'Device check')">
 			<CheckboxRadioSwitch :checked.sync="showDeviceChecker">
-				{{
-					t(
-						"spreed",
-						"Always show the device preview screen before joining a call in this conversation."
-					)
-				}}
+				{{ t('spreed', 'Always show the device preview screen before joining a call in this conversation.') }}
 			</CheckboxRadioSwitch>
 		</AppSettingsSection>
 
 		<!-- Guest access -->
-		<AppSettingsSection v-if="canFullModerate" :title="t('spreed', 'Guests access')">
+		<AppSettingsSection v-if="canFullModerate"
+			:title="t('spreed', 'Guests access')">
 			<LinkShareSettings ref="linkShareSettings" />
 		</AppSettingsSection>
 
@@ -62,27 +59,32 @@
 		all the settings in this component are conversation settings. Proposal:
 		move lock conversation in destructive actions and create a separate
 		section for listablesettings -->
-		<AppSettingsSection v-if="canFullModerate" :title="t('spreed', 'Conversation settings')">
+		<AppSettingsSection v-if="canFullModerate"
+			:title="t('spreed', 'Conversation settings')">
 			<ListableSettings :token="token" />
 			<LockingSettings :token="token" />
 		</AppSettingsSection>
 
 		<!-- Conversation permissions -->
-		<AppSettingsSection v-if="canFullModerate" :title="t('spreed', 'Participants permissions')">
+		<AppSettingsSection v-if="canFullModerate"
+			:title="t('spreed', 'Participants permissions')">
 			<ConversationPermissionsSettings :token="token" />
 		</AppSettingsSection>
 
 		<!-- Meeting settings -->
-		<AppSettingsSection v-if="canFullModerate" :title="t('spreed', 'Meeting settings')">
+		<AppSettingsSection v-if="canFullModerate"
+			:title="t('spreed', 'Meeting settings')">
 			<LobbySettings :token="token" />
 			<SipSettings v-if="canUserEnableSIP" />
 		</AppSettingsSection>
-		<AppSettingsSection v-if="canFullModerate && matterbridgeEnabled" :title="t('spreed', 'Matterbridge')">
+		<AppSettingsSection v-if="canFullModerate && matterbridgeEnabled"
+			:title="t('spreed', 'Matterbridge')">
 			<MatterbridgeSettings />
 		</AppSettingsSection>
 
 		<!-- Destructive actions -->
-		<AppSettingsSection v-if="canLeaveConversation || canDeleteConversation" :title="t('spreed', 'Danger zone')">
+		<AppSettingsSection v-if="canLeaveConversation || canDeleteConversation"
+			:title="t('spreed', 'Danger zone')">
 			<DangerZone :conversation="conversation"
 				:can-leave-conversation="canLeaveConversation"
 				:can-delete-conversation="canDeleteConversation" />
@@ -149,17 +151,12 @@ export default {
 		},
 
 		token() {
-			return (
-				this.$store.getters.getConversationSettingsToken()
-        || this.$store.getters.getToken()
-			)
+			return this.$store.getters.getConversationSettingsToken()
+				|| this.$store.getters.getToken()
 		},
 
 		conversation() {
-			return (
-				this.$store.getters.conversation(this.token)
-        || this.$store.getters.dummyConversation
-			)
+			return this.$store.getters.conversation(this.token) || this.$store.getters.dummyConversation
 		},
 
 		participantType() {
@@ -167,11 +164,9 @@ export default {
 		},
 
 		canFullModerate() {
-			return (
-				(this.participantType === PARTICIPANT.TYPE.OWNER
-          || this.participantType === PARTICIPANT.TYPE.MODERATOR)
-        && this.conversation.type !== CONVERSATION.TYPE.ONE_TO_ONE
-			)
+			return (this.participantType === PARTICIPANT.TYPE.OWNER
+				|| this.participantType === PARTICIPANT.TYPE.MODERATOR)
+				&& this.conversation.type !== CONVERSATION.TYPE.ONE_TO_ONE
 		},
 
 		canDeleteConversation() {
@@ -209,9 +204,8 @@ export default {
 		/**
 		 * Get the deviceChecker value from the browserstorage.
 		 */
-		this.showDeviceChecker
-      = BrowserStorage.getItem('showDeviceChecker' + this.token) === null
-      || BrowserStorage.getItem('showDeviceChecker' + this.token) === 'true'
+		this.showDeviceChecker = BrowserStorage.getItem('showDeviceChecker' + this.token) === null
+			|| BrowserStorage.getItem('showDeviceChecker' + this.token) === 'true'
 	},
 
 	methods: {
@@ -257,31 +251,27 @@ export default {
 
 <style lang="scss" scoped>
 ::v-deep button.icon {
-  height: 32px;
-  width: 32px;
-  display: inline-block;
-  margin-left: 5px;
-  vertical-align: middle;
+	height: 32px;
+	width: 32px;
+	display: inline-block;
+	margin-left: 5px;
+	vertical-align: middle;
 }
 
 ::v-deep .modal-container {
-  display: flex !important;
-}
-
-::v-deep .app-settings__content {
-  width: 450px;
+	display: flex !important;
 }
 
 ::v-deep .app-settings-section__hint {
-  color: var(--color-text-lighter);
-  padding: 8px 0;
+	color: var(--color-text-lighter);
+	padding: 8px 0;
 }
 
 ::v-deep .app-settings-subsection {
-  margin-top: 25px;
+	margin-top: 25px;
 
-  &:first-child {
-    margin-top: 0;
-  }
+	&:first-child {
+		margin-top: 0;
+	}
 }
 </style>

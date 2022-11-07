@@ -167,9 +167,11 @@ export default {
 		},
 
 		/**
-		 *		 Add the selected group/user/circle to the conversation		 *		 * @param {object} item The autocomplete suggestion to start a conversation with		 * @param {string} item.id The ID of the target		 * @param {string} item.source The source of the target
+		 * Add the selected group/user/circle to the conversation
 		 *
-		 * @param item
+		 * @param {object} item The autocomplete suggestion to start a conversation with
+		 * @param {string} item.id The ID of the target
+		 * @param {string} item.source The source of the target
 		 */
 		async addParticipants(item) {
 			try {

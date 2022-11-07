@@ -277,9 +277,10 @@ export default {
 		},
 
 		/**
-		 *		 Updates the conversationName value while editing the conversation's title.		 *		 * @param {string} title the conversation title emitted by the AppSidevar vue		 * component.
+		 * Updates the conversationName value while editing the conversation's title.
 		 *
-		 * @param title
+		 * @param {string} title the conversation title emitted by the AppSidevar vue
+		 * component.
 		 */
 		handleUpdateTitle(title) {
 			this.conversationName = title

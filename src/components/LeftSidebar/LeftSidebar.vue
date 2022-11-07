@@ -365,9 +365,13 @@ export default {
 		},
 
 		/**
-		 *		 Create a new conversation with the selected user		 * or bring up the dialog to create a new group/circle conversation		 *		 * @param {object} item The autocomplete suggestion to start a conversation with		 * @param {string} item.id The ID of the target		 * @param {string} item.label The displayname of the target		 * @param {string} item.source The source of the target (e.g. users, groups, circle)
+		 * Create a new conversation with the selected user
+		 * or bring up the dialog to create a new group/circle conversation
 		 *
-		 * @param item
+		 * @param {object} item The autocomplete suggestion to start a conversation with
+		 * @param {string} item.id The ID of the target
+		 * @param {string} item.label The displayname of the target
+		 * @param {string} item.source The source of the target (e.g. users, groups, circle)
 		 */
 		async createAndJoinConversation(item) {
 			if (item.source === 'users') {

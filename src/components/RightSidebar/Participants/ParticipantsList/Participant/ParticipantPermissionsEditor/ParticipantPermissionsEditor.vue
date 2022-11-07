@@ -96,9 +96,9 @@ export default {
 
 	methods: {
 		/**
-		 *		 Binary sum all the permissions and make the request to change them.		 *		 * @param {number} permissions - the permission number.
+		 * Binary sum all the permissions and make the request to change them.
 		 *
-		 * @param permissions
+		 * @param {number} permissions - the permission number.
 		 */
 		handleSubmitPermissions(permissions) {
 			try {

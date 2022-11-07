@@ -22,22 +22,22 @@ declare(strict_types=1);
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-if(!\OC::$server->getSession()->get('oldUserId'))
-return array_merge_recursive(
-	include(__DIR__ . '/routes/routesCallController.php'),
-	include(__DIR__ . '/routes/routesChatController.php'),
-	include(__DIR__ . '/routes/routesCommandController.php'),
-	include(__DIR__ . '/routes/routesFederationController.php'),
-	include(__DIR__ . '/routes/routesFilesIntegrationController.php'),
-	include(__DIR__ . '/routes/routesGuestController.php'),
-	include(__DIR__ . '/routes/routesHostedSignalingServerController.php'),
-	include(__DIR__ . '/routes/routesMatterbridgeController.php'),
-	include(__DIR__ . '/routes/routesMatterbridgeSettingsController.php'),
-	include(__DIR__ . '/routes/routesPageController.php'),
-	include(__DIR__ . '/routes/routesPublicShareAuthController.php'),
-	include(__DIR__ . '/routes/routesReactionController.php'),
-	include(__DIR__ . '/routes/routesRoomController.php'),
-	include(__DIR__ . '/routes/routesSettingsController.php'),
-	include(__DIR__ . '/routes/routesSignalingController.php'),
-	include(__DIR__ . '/routes/routesTempAvatarController.php'),
-);
+if (!\OC::$server->getSession()->get('oldUserId'))
+	return array_merge_recursive(
+		include(__DIR__ . '/routes/routesCallController.php'),
+		include(__DIR__ . '/routes/routesChatController.php'),
+		include(__DIR__ . '/routes/routesCommandController.php'),
+		include(__DIR__ . '/routes/routesFederationController.php'),
+		include(__DIR__ . '/routes/routesFilesIntegrationController.php'),
+		include(__DIR__ . '/routes/routesGuestController.php'),
+		include(__DIR__ . '/routes/routesHostedSignalingServerController.php'),
+		include(__DIR__ . '/routes/routesMatterbridgeController.php'),
+		include(__DIR__ . '/routes/routesMatterbridgeSettingsController.php'),
+		include(__DIR__ . '/routes/routesPageController.php'),
+		include(__DIR__ . '/routes/routesPublicShareAuthController.php'),
+		include(__DIR__ . '/routes/routesReactionController.php'),
+		include(__DIR__ . '/routes/routesRoomController.php'),
+		include(__DIR__ . '/routes/routesSettingsController.php'),
+		include(__DIR__ . '/routes/routesSignalingController.php'),
+		include(__DIR__ . '/routes/routesTempAvatarController.php'),
+	);
