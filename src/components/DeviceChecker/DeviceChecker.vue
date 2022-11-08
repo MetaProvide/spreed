@@ -20,7 +20,10 @@
 -->
 
 <template>
-	<Modal v-if="modal" class="talk-modal" size="small" @close="closeModal">
+	<Modal v-if="modal"
+		class="talk-modal"
+		size="small"
+		@close="closeModal">
 		<div class="device-checker">
 			<div class="modal-header">
 				<Button class="adminly-close-button" @click="closeModal" />
@@ -42,39 +45,71 @@
 			-->
 			<div class="device-checker__call-preferences">
 				<!-- Audio toggle -->
-				<Button v-tooltip="audioButtonTooltip" type="tertiary" :aria-label="audioButtonTooltip"
-					:disabled="!audioPreviewAvailable" @click="toggleAudio">
+				<Button v-tooltip="audioButtonTooltip"
+					type="tertiary"
+					:aria-label="audioButtonTooltip"
+					:disabled="!audioPreviewAvailable"
+					@click="toggleAudio">
 					<template #icon>
-						<Microphone v-if="audioOn" title="" decorative :size="20" />
-						<MicrophoneOff v-else title="" decorative :size="20" />
+						<Microphone v-if="audioOn"
+							title=""
+							decorative
+							:size="20" />
+						<MicrophoneOff v-else
+							title=""
+							decorative
+							:size="20" />
 					</template>
 				</Button>
-				<VolumeIndicator class="indicator" :audio-preview-available="audioPreviewAvailable"
-					:current-volume="currentVolume" :volume-threshold="volumeThreshold" :disabled="!audioOn" />
+				<VolumeIndicator class="indicator"
+					:audio-preview-available="audioPreviewAvailable"
+					:current-volume="currentVolume"
+					:volume-threshold="volumeThreshold"
+					:disabled="!audioOn" />
 
 				<!-- Video toggle -->
-				<Button v-tooltip="videoButtonTooltip" type="tertiary" :aria-label="videoButtonTooltip"
-					:disabled="!videoPreviewAvailable" @click="toggleVideo">
+				<Button v-tooltip="videoButtonTooltip"
+					type="tertiary"
+					:aria-label="videoButtonTooltip"
+					:disabled="!videoPreviewAvailable"
+					@click="toggleVideo">
 					<template #icon>
-						<Video v-if="videoOn" title="" decorative :size="20" />
-						<VideoOff v-else title="" decorative :size="20" />
+						<Video v-if="videoOn"
+							title=""
+							decorative
+							:size="20" />
+						<VideoOff v-else
+							title=""
+							decorative
+							:size="20" />
 					</template>
 				</Button>
 
 				<!-- Blur toggle -->
-				<Button v-if="videoPreviewAvailable && blurPreviewAvailable" v-tooltip="blurButtonTooltip"
-					type="tertiary" :aria-label="blurButtonTooltip" :disabled="!blurPreviewAvailable"
+				<Button v-if="videoPreviewAvailable && blurPreviewAvailable"
+					v-tooltip="blurButtonTooltip"
+					type="tertiary"
+					:aria-label="blurButtonTooltip"
+					:disabled="!blurPreviewAvailable"
 					@click="toggleBlur">
 					<template #icon>
-						<Blur v-if="blurOn" :size="20" decorative title="" />
-						<BlurOff v-else :size="20" decorative title="" />
+						<Blur v-if="blurOn"
+							:size="20"
+							decorative
+							title="" />
+						<BlurOff v-else
+							:size="20"
+							decorative
+							title="" />
 					</template>
 				</Button>
 			</div>
 
 			<!-- Device selection -->
 			<div class="device-checker__device-selection">
-				<Button v-if="!showDeviceSelection" type="tertiary" class="select-devices"
+				<Button v-if="!showDeviceSelection"
+					type="tertiary"
+					class="select-devices"
 					@click="showDeviceSelection = true">
 					<template #icon>
 						<Cog title="" decorative :size="20" />
@@ -82,18 +117,22 @@
 					{{ t("spreed", "Choose devices") }}
 				</Button>
 				<template v-if="showDeviceSelection">
-					<MediaDevicesSelector kind="audioinput" :devices="devices" :device-id="audioInputId"
+					<MediaDevicesSelector kind="audioinput"
+						:devices="devices"
+						:device-id="audioInputId"
 						@update:deviceId="audioInputId = $event" />
-					<MediaDevicesSelector kind="videoinput" :devices="devices" :device-id="videoInputId"
+					<MediaDevicesSelector kind="videoinput"
+						:devices="devices"
+						:device-id="videoInputId"
 						@update:deviceId="videoInputId = $event" />
 				</template>
 			</div>
 			<CheckboxRadioSwitch :checked.sync="showDeviceChecker" class="checkbox">
 				{{
-						t(
-							"spreed",
-							"Always show this dialog before joining a call in this conversation."
-						)
+					t(
+						"spreed",
+						"Always show this dialog before joining a call in this conversation."
+					)
 				}}
 			</CheckboxRadioSwitch>
 

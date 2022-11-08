@@ -309,18 +309,9 @@ export default {
 			this.parsedText = this.rawToParsed(contentEditable.innerHTML)
 		},
 		/**
-		 * Returns a parsed version of the given raw text of the content
-		 * editable div.
+		 *		 Returns a parsed version of the given raw text of the content		 * editable div.		 *		 * The given raw text contains a plain text representation of HTML		 * content (like "first&nbsp;line<br>second&nbsp;line"). The returned		 * parsed text replaces the (known) HTML content with the format		 * expected by the server (like "first line\nsecond line").		 *		 * The parsed text is also trimmed.		 *		 * @param {string} text the raw text		 * @return {string} the parsed text
 		 *
-		 * The given raw text contains a plain text representation of HTML
-		 * content (like "first&nbsp;line<br>second&nbsp;line"). The returned
-		 * parsed text replaces the (known) HTML content with the format
-		 * expected by the server (like "first line\nsecond line").
-		 *
-		 * The parsed text is also trimmed.
-		 *
-		 * @param {string} text the raw text
-		 * @return {string} the parsed text
+		 * @param text
 		 */
 		rawToParsed(text) {
 			text = text.replace(/<br>/g, '\n')
@@ -444,20 +435,20 @@ export default {
 		},
 
 		/**
-		 * Handles files pasting event
+		 *		 Handles files pasting event		 *		 * @param {File[] | FileList} files pasted files list
 		 *
-		 * @param {File[] | FileList} files pasted files list
+		 * @param files
 		 */
 		async handlePastedFiles(files) {
 			this.handleFiles(files, true)
 		},
 
 		/**
-		 * Handles file upload
+		 *		 Handles file upload		 *		 * @param {File[] | FileList} files pasted files list		 * @param {boolean} rename whether to rename the files		 * @param {boolean} isVoiceMessage indicates whether the file is a vooicemessage
 		 *
-		 * @param {File[] | FileList} files pasted files list
-		 * @param {boolean} rename whether to rename the files
-		 * @param {boolean} isVoiceMessage indicates whether the file is a vooicemessage
+		 * @param files
+		 * @param rename
+		 * @param isVoiceMessage
 		 */
 		async handleFiles(files, rename = false, isVoiceMessage) {
 			// Create a unique id for the upload operation
@@ -467,15 +458,10 @@ export default {
 		},
 
 		/**
-		 * Add selected emoji to text input area
-		 *
-		 * The emoji will be added at the current caret position, and any text
-		 * currently selected will be replaced by the emoji. If the input area
-		 * does not have the focus there will be no caret or selection; in that
-		 * case the emoji will be added at the end.
-		 *
-		 * @param {string} emoji Emoji object
-		 */
+ *		 Add selected emoji to text input area		 *		 * The emoji will be added at the current caret position, and any text		 * currently selected will be replaced by the emoji. If the input area		 * does not have the focus there will be no caret or selection; in that		 * case the emoji will be added at the end.		 *		 * @param {string} emoji Emoji object
+ *
+ * @param emoji
+ */
 		addEmoji(emoji) {
 			const selection = document.getSelection()
 

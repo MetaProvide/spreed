@@ -150,12 +150,9 @@ export default {
 
 	methods: {
 		/**
-		 * Binary sum all the permissions and make the request to change them.
+		 *		 Binary sum all the permissions and make the request to change them.		 *		 * @param {string | number} value - The permissions value, which is a		 * string (e.g. 'restricted' or 'all') unless this method is called by		 * the click event emitted by the `permissionsEditor` component, in		 * which case it's a number indicating the permissions value.
 		 *
-		 * @param {string | number} value - The permissions value, which is a
-		 * string (e.g. 'restricted' or 'all') unless this method is called by
-		 * the click event emitted by the `permissionsEditor` component, in
-		 * which case it's a number indicating the permissions value.
+		 * @param value
 		 */
 		async handleSubmitPermissions(value) {
 			let permissions
@@ -197,9 +194,9 @@ export default {
 		},
 
 		/**
-		 * Get the radio button string value given a permission number.
+		 *		 Get the radio button string value given a permission number.		 *		 * @param {number} value - The permissions value.
 		 *
-		 * @param {number} value - The permissions value.
+		 * @param value
 		 */
 		getPermissionRadioValue(value) {
 			switch (value) {
@@ -222,9 +219,9 @@ export default {
 		},
 
 		/**
-		 * Hides the modal and resets conversation permissions to the previous
-		 * value.
-		 */
+ * Hides the modal and resets conversation permissions to the previous
+ * value.
+ */
 		handleClosePermissionsEditor() {
 			this.showPermissionsEditor = false
 			this.setCurrentRadioValue()

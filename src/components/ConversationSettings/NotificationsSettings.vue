@@ -139,18 +139,18 @@ export default {
 
 	methods: {
 		/**
-		 * Set the notification level for the conversation
+		 *		 Set the notification level for the conversation		 *		 * @param {number} notificationLevel The notification level to set.
 		 *
-		 * @param {number} notificationLevel The notification level to set.
+		 * @param notificationLevel
 		 */
 		async setNotificationLevel(notificationLevel) {
 			await this.$store.dispatch('setNotificationLevel', { token: this.token, notificationLevel })
 		},
 
 		/**
-		 * Set the call notification level for the conversation
+		 *		 Set the call notification level for the conversation		 *		 * @param {boolean} isChecked Whether or not call notifications are enabled
 		 *
-		 * @param {boolean} isChecked Whether or not call notifications are enabled
+		 * @param isChecked
 		 */
 		async setNotificationCalls(isChecked) {
 			const notificationCalls = isChecked ? PARTICIPANT.NOTIFY_CALLS.ON : PARTICIPANT.NOTIFY_CALLS.OFF

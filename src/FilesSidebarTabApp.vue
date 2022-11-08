@@ -268,22 +268,9 @@ export default {
 		},
 
 		/**
-		 * Sets whether the Talk sidebar is supported for the file or not.
+		 *		 Sets whether the Talk sidebar is supported for the file or not.		 *		 * In some cases it is not possible to know if the Talk sidebar is		 * supported for the file or not just from the data in the FileInfo (for		 * example, for files in a folder shared by the current user). Due to		 * that this function is asynchronous; isTalkSidebarSupportedForFile		 * will be set as soon as possible (in some cases, immediately) with		 * either true or false, depending on whether the Talk sidebar is		 * supported for the file or not.		 *		 * The Talk sidebar is supported for a file if the file is shared with		 * the current user or by the current user to another user (as a user,		 * group...), or if the file is a descendant of a folder that meets		 * those conditions.		 *		 * @param {OCA.Files.FileInfo} fileInfo the FileInfo to check
 		 *
-		 * In some cases it is not possible to know if the Talk sidebar is
-		 * supported for the file or not just from the data in the FileInfo (for
-		 * example, for files in a folder shared by the current user). Due to
-		 * that this function is asynchronous; isTalkSidebarSupportedForFile
-		 * will be set as soon as possible (in some cases, immediately) with
-		 * either true or false, depending on whether the Talk sidebar is
-		 * supported for the file or not.
-		 *
-		 * The Talk sidebar is supported for a file if the file is shared with
-		 * the current user or by the current user to another user (as a user,
-		 * group...), or if the file is a descendant of a folder that meets
-		 * those conditions.
-		 *
-		 * @param {OCA.Files.FileInfo} fileInfo the FileInfo to check
+		 * @param fileInfo
 		 */
 		async setTalkSidebarSupportedForFile(fileInfo) {
 			this.isTalkSidebarSupportedForFile = undefined
@@ -360,19 +347,9 @@ export default {
 		},
 
 		/**
-		 * Dirty hack to set the style in the tabs container.
+		 *		 Dirty hack to set the style in the tabs container.		 *		 * This is needed to force the scroll bars on the tabs container instead		 * of on the whole sidebar.		 *		 * Additionally a minimum height is forced to ensure that the height of		 * the chat view will be at least 300px, even if the info view is large		 * and the screen short; in that case a scroll bar will be shown for the		 * sidebar, but even if that looks really bad it is better than an		 * unusable chat view.		 *		 * @param {boolean} isChatTheActiveTab whether the active tab is the		 *        chat tab or not.
 		 *
-		 * This is needed to force the scroll bars on the tabs container instead
-		 * of on the whole sidebar.
-		 *
-		 * Additionally a minimum height is forced to ensure that the height of
-		 * the chat view will be at least 300px, even if the info view is large
-		 * and the screen short; in that case a scroll bar will be shown for the
-		 * sidebar, but even if that looks really bad it is better than an
-		 * unusable chat view.
-		 *
-		 * @param {boolean} isChatTheActiveTab whether the active tab is the
-		 *        chat tab or not.
+		 * @param isChatTheActiveTab
 		 */
 		forceTabsContentStyleWhenChatTabIsActive(isChatTheActiveTab) {
 			const tabs = document.querySelector('.app-sidebar-tabs')

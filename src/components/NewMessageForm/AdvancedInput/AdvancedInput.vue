@@ -104,12 +104,9 @@ import escapeHtml from 'escape-html'
 import debounce from 'debounce'
 
 /**
- * Checks whether the given style sheet is the default style sheet from the
- * vue-at component or not.
+ * Checks whether the given style sheet is the default style sheet from the * vue-at component or not. * * @param {CSSStyleSheet} sheet the style sheet to check. * @return {boolean} True if it is the style sheet from vue-at, false *          otherwise.
  *
- * @param {CSSStyleSheet} sheet the style sheet to check.
- * @return {boolean} True if it is the style sheet from vue-at, false
- *          otherwise.
+ * @param sheet
  */
 function isDefaultAtWhoStyleSheet(sheet) {
 	try {
@@ -188,8 +185,8 @@ export default {
 		},
 
 		/**
-		 * Determines if the input is active
-		 */
+ * Determines if the input is active
+ */
 		activeInput: {
 			type: Boolean,
 			default: true,
@@ -201,8 +198,8 @@ export default {
 		},
 
 		/**
-		 * The token of the conversation to get candidate mentions for.
-		 */
+ * The token of the conversation to get candidate mentions for.
+ */
 		token: {
 			type: String,
 			required: true,
@@ -316,11 +313,9 @@ export default {
 		},
 
 		/**
-		 * Emits the submit event when enter is pressed (look
-		 * at the v-on in the template) unless shift is pressed:
-		 * in this case a new line will be created.
+		 *		 Emits the submit event when enter is pressed (look		 * at the v-on in the template) unless shift is pressed:		 * in this case a new line will be created.		 *		 * @param {object} event the event object;
 		 *
-		 * @param {object} event the event object;
+		 * @param event
 		 */
 		handleKeydownEnter(event) {
 			// Prevent submit event when vue-at panel is open, as that should
@@ -343,9 +338,9 @@ export default {
 		},
 
 		/**
-		 * Loose focus of the chat so shortcuts can be used
+		 *		 Loose focus of the chat so shortcuts can be used		 *		 * @param {object} event the event object;
 		 *
-		 * @param {object} event the event object;
+		 * @param event
 		 */
 		handleKeydownEsc(event) {
 			document.activeElement.blur()

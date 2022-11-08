@@ -189,10 +189,9 @@ export default {
 
 	methods: {
 		/**
-		 * Takes the permissions from the store and writes them in the data of
-		 * this component.
+		 *		 Takes the permissions from the store and writes them in the data of		 * this component.		 *		 * @param {number} permissions - the permissions number.
 		 *
-		 * @param {number} permissions - the permissions number.
+		 * @param permissions
 		 */
 		writePermissionsToComponent(permissions) {
 			permissions & PERMISSIONS.CALL_START ? this.callStart = true : this.callStart = false
