@@ -207,7 +207,7 @@ class Application extends App implements IBootstrap {
 				'name' => $server->getL10N(self::APP_ID)->t('Talk'),
 				'href' => $server->getURLGenerator()->linkToRouteAbsolute('spreed.Page.index'),
 				'icon' => $server->getURLGenerator()->imagePath(self::APP_ID, 'app.svg'),
-				'order' => 3,
+				'order' => 4,
 				'type' => $user instanceof IUser && !$config->isDisabledForUser($user) ? 'link' : 'hidden',
 			];
 		});
