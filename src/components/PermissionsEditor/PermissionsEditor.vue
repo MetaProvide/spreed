@@ -20,48 +20,45 @@
 -->
 
 <template>
-	<Modal v-on="$listeners">
+	<Modal size="small"
+		v-on="$listeners">
 		<div class="wrapper">
 			<template v-if="!loading">
 				<!-- eslint-disable-next-line vue/no-v-html -->
 				<p class="title" v-html="modalTitle" />
 				<form @submit.prevent="handleSubmitPermissions">
-					<CheckboxRadioSwitch
-						ref="callStart"
+					<CheckboxRadioSwitch ref="callStart"
 						:checked.sync="callStart"
 						class="checkbox">
 						{{ t('spreed', 'Start a call') }}
 					</CheckboxRadioSwitch>
-					<CheckboxRadioSwitch
-						ref="lobbyIgnore"
+					<CheckboxRadioSwitch ref="lobbyIgnore"
 						:checked.sync="lobbyIgnore"
 						class="checkbox">
 						{{ t('spreed', 'Skip the lobby') }}
 					</CheckboxRadioSwitch>
-					<CheckboxRadioSwitch
-						ref="publishAudio"
+					<CheckboxRadioSwitch ref="publishAudio"
 						:checked.sync="publishAudio"
 						class="checkbox">
 						{{ t('spreed', 'Enable the microphone') }}
 					</CheckboxRadioSwitch>
-					<CheckboxRadioSwitch
-						ref="publishVideo"
+					<CheckboxRadioSwitch ref="publishVideo"
 						:checked.sync="publishVideo"
 						class="checkbox">
 						{{ t('spreed', 'Enable the camera') }}
 					</CheckboxRadioSwitch>
-					<CheckboxRadioSwitch
-						ref="publishScreen"
+					<CheckboxRadioSwitch ref="publishScreen"
 						:checked.sync="publishScreen"
 						class="checkbox">
 						{{ t('spreed', 'Share the screen') }}
 					</CheckboxRadioSwitch>
-					<button ref="submit"
-						type="submit"
-						:disabled="submitButtonDisabled"
-						class="nc-button primary">
+					<Button ref="submit"
+						native-type="submit"
+						class="button-update-permission"
+						type="primary"
+						:disabled="submitButtonDisabled">
 						{{ t('spreed', 'Update permissions') }}
-					</button>
+					</Button>
 				</form>
 			</template>
 			<div v-if="loading" class="loading-screen">
@@ -76,6 +73,7 @@
 import CheckboxRadioSwitch from '@nextcloud/vue/dist/Components/CheckboxRadioSwitch'
 import { PARTICIPANT } from '../../constants'
 import Modal from '@nextcloud/vue/dist/Components/Modal'
+import Button from '@nextcloud/vue/dist/Components/Button'
 
 const PERMISSIONS = PARTICIPANT.PERMISSIONS
 
@@ -85,6 +83,7 @@ export default {
 	components: {
 		CheckboxRadioSwitch,
 		Modal,
+		Button,
 	},
 
 	props: {
@@ -190,10 +189,9 @@ export default {
 
 	methods: {
 		/**
-		 * Takes the permissions from the store and writes them in the data of
-		 * this component.
+		 *		 Takes the permissions from the store and writes them in the data of		 * this component.		 *		 * @param {number} permissions - the permissions number.
 		 *
-		 * @param {number} permissions - the permissions number.
+		 * @param permissions
 		 */
 		writePermissionsToComponent(permissions) {
 			permissions & PERMISSIONS.CALL_START ? this.callStart = true : this.callStart = false
@@ -211,9 +209,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/buttons.scss';
-
-$editor-width: 350px;
+@import '../../assets/buttons';
 
 .nc-button {
 	width: 100%;
@@ -221,7 +217,6 @@ $editor-width: 350px;
 }
 
 .wrapper {
-	width: $editor-width;
 	padding: 0 24px 24px 24px;
 }
 
@@ -232,7 +227,6 @@ $editor-width: 350px;
 }
 
 .loading-screen {
-	width: $editor-width;
 	height: 200px;
 	text-align: center;
 	font-weight: bold;
@@ -244,6 +238,10 @@ $editor-width: 350px;
 	span {
 		margin-bottom: 16px;
 	}
+}
+
+.button-update-permission {
+	margin: 0 auto;
 }
 
 </style>

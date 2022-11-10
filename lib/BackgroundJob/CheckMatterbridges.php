@@ -25,6 +25,7 @@ namespace OCA\Talk\BackgroundJob;
 
 use OCA\Talk\MatterbridgeManager;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -35,15 +36,11 @@ use Psr\Log\LoggerInterface;
  * @package OCA\Talk\BackgroundJob
  */
 class CheckMatterbridges extends TimedJob {
+	protected IConfig $serverConfig;
 
-	/** @var IConfig */
-	protected $serverConfig;
+	protected MatterbridgeManager $bridgeManager;
 
-	/** @var MatterbridgeManager */
-	protected $bridgeManager;
-
-	/** @var LoggerInterface */
-	protected $logger;
+	protected LoggerInterface $logger;
 
 	public function __construct(ITimeFactory $time,
 								IConfig $serverConfig,
@@ -53,6 +50,7 @@ class CheckMatterbridges extends TimedJob {
 
 		// Every 15 minutes
 		$this->setInterval(60 * 15);
+		$this->setTimeSensitivity(IJob::TIME_SENSITIVE);
 
 		$this->serverConfig = $serverConfig;
 		$this->bridgeManager = $bridgeManager;

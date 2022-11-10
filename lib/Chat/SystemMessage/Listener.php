@@ -43,6 +43,7 @@ use OCA\Talk\Share\RoomShareProvider;
 use OCA\Talk\TalkSession;
 use OCA\Talk\Webinary;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\Comments\IComment;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\EventDispatcher\IEventListener;
@@ -54,19 +55,12 @@ use OCP\Share\IShare;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 class Listener implements IEventListener {
-
-	/** @var IRequest */
-	protected $request;
-	/** @var ChatManager */
-	protected $chatManager;
-	/** @var TalkSession */
-	protected $talkSession;
-	/** @var ISession */
-	protected $session;
-	/** @var IUserSession */
-	protected $userSession;
-	/** @var ITimeFactory */
-	protected $timeFactory;
+	protected IRequest $request;
+	protected ChatManager $chatManager;
+	protected TalkSession $talkSession;
+	protected ISession $session;
+	protected IUserSession $userSession;
+	protected ITimeFactory $timeFactory;
 
 	public function __construct(IRequest $request,
 								ChatManager $chatManager,
@@ -86,9 +80,9 @@ class Listener implements IEventListener {
 		$dispatcher->addListener(Room::EVENT_BEFORE_SESSION_JOIN_CALL, static function (ModifyParticipantEvent $event) {
 			$room = $event->getRoom();
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 			/** @var ParticipantService $participantService */
-			$participantService = \OC::$server->query(ParticipantService::class);
+			$participantService = \OC::$server->get(ParticipantService::class);
 
 			if ($participantService->hasActiveSessionsInCall($room)) {
 				$listener->sendSystemMessage($room, 'call_joined', [], $event->getParticipant());
@@ -115,7 +109,7 @@ class Listener implements IEventListener {
 			}
 
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			$listener->sendSystemMessage($room, 'call_left', [], $event->getParticipant());
 		});
@@ -123,7 +117,7 @@ class Listener implements IEventListener {
 		$dispatcher->addListener(Room::EVENT_AFTER_ROOM_CREATE, static function (RoomEvent $event) {
 			$room = $event->getRoom();
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			$listener->sendSystemMessage($room, 'conversation_created');
 		});
@@ -135,7 +129,7 @@ class Listener implements IEventListener {
 
 			$room = $event->getRoom();
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			$listener->sendSystemMessage($room, 'conversation_renamed', [
 				'newName' => $event->getNewValue(),
@@ -158,7 +152,7 @@ class Listener implements IEventListener {
 		$dispatcher->addListener(Room::EVENT_AFTER_PASSWORD_SET, static function (ModifyRoomEvent $event) {
 			$room = $event->getRoom();
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			if ($event->getNewValue() !== '') {
 				$listener->sendSystemMessage($room, 'password_set');
@@ -175,11 +169,11 @@ class Listener implements IEventListener {
 
 			if ($event->getNewValue() === Room::TYPE_PUBLIC) {
 				/** @var self $listener */
-				$listener = \OC::$server->query(self::class);
+				$listener = \OC::$server->get(self::class);
 				$listener->sendSystemMessage($room, 'guests_allowed');
 			} elseif ($event->getNewValue() === Room::TYPE_GROUP) {
 				/** @var self $listener */
-				$listener = \OC::$server->query(self::class);
+				$listener = \OC::$server->get(self::class);
 				$listener->sendSystemMessage($room, 'guests_disallowed');
 			}
 		});
@@ -191,7 +185,7 @@ class Listener implements IEventListener {
 			}
 
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			if ($event->getNewValue() === Room::READ_ONLY) {
 				$listener->sendSystemMessage($room, 'read_only');
@@ -203,7 +197,7 @@ class Listener implements IEventListener {
 			$room = $event->getRoom();
 
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			if ($event->getNewValue() === Room::LISTABLE_NONE) {
 				$listener->sendSystemMessage($room, 'listable_none');
@@ -221,7 +215,7 @@ class Listener implements IEventListener {
 			$room = $event->getRoom();
 
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			if ($event->isTimerReached()) {
 				$listener->sendSystemMessage($room, 'lobby_timer_reached');
@@ -239,7 +233,7 @@ class Listener implements IEventListener {
 			}
 
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			$participants = $event->getParticipants();
 
@@ -263,7 +257,15 @@ class Listener implements IEventListener {
 					|| $listener->getUserId() !== $participant['actorId']
 					// - has joined a listable room on their own
 					|| $participantType === Participant::USER) {
-					$listener->sendSystemMessage($room, 'user_added', ['user' => $participant['actorId']]);
+					$comment = $listener->sendSystemMessage(
+						$room,
+						'user_added',
+						['user' => $participant['actorId']],
+						null,
+						$event->shouldSkipLastMessageUpdate()
+					);
+
+					$event->setLastMessage($comment);
 				}
 			}
 		});
@@ -281,7 +283,7 @@ class Listener implements IEventListener {
 			}
 
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 			$listener->sendSystemMessage($room, 'user_removed', ['user' => $event->getUser()->getUID()]);
 		});
 		$dispatcher->addListener(Room::EVENT_AFTER_PARTICIPANT_TYPE_SET, static function (ModifyParticipantEvent $event) {
@@ -294,25 +296,25 @@ class Listener implements IEventListener {
 
 			if ($event->getNewValue() === Participant::MODERATOR) {
 				/** @var self $listener */
-				$listener = \OC::$server->query(self::class);
+				$listener = \OC::$server->get(self::class);
 				$listener->sendSystemMessage($room, 'moderator_promoted', ['user' => $attendee->getActorId()]);
 			} elseif ($event->getNewValue() === Participant::USER) {
 				if ($event->getOldValue() === Participant::USER_SELF_JOINED) {
 					/** @var self $listener */
-					$listener = \OC::$server->query(self::class);
+					$listener = \OC::$server->get(self::class);
 					$listener->sendSystemMessage($room, 'user_added', ['user' => $attendee->getActorId()]);
 				} else {
 					/** @var self $listener */
-					$listener = \OC::$server->query(self::class);
+					$listener = \OC::$server->get(self::class);
 					$listener->sendSystemMessage($room, 'moderator_demoted', ['user' => $attendee->getActorId()]);
 				}
 			} elseif ($event->getNewValue() === Participant::GUEST_MODERATOR) {
 				/** @var self $listener */
-				$listener = \OC::$server->query(self::class);
+				$listener = \OC::$server->get(self::class);
 				$listener->sendSystemMessage($room, 'guest_moderator_promoted', ['session' => $attendee->getActorId()]);
 			} elseif ($event->getNewValue() === Participant::GUEST) {
 				/** @var self $listener */
-				$listener = \OC::$server->query(self::class);
+				$listener = \OC::$server->get(self::class);
 				$listener->sendSystemMessage($room, 'guest_moderator_demoted', ['session' => $attendee->getActorId()]);
 			}
 		});
@@ -325,10 +327,10 @@ class Listener implements IEventListener {
 			}
 
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			/** @var Manager $manager */
-			$manager = \OC::$server->query(Manager::class);
+			$manager = \OC::$server->get(Manager::class);
 
 			$room = $manager->getRoomByToken($share->getSharedWith());
 			$metaData = \OC::$server->getRequest()->getParam('talkMetaData') ?? '';
@@ -341,6 +343,7 @@ class Listener implements IEventListener {
 					unset($metaData['messageType']);
 				}
 			}
+			$metaData['mimeType'] = $share->getNode()->getMimeType();
 
 			$listener->sendSystemMessage($room, 'file_shared', ['share' => $share->getId(), 'metaData' => $metaData]);
 		};
@@ -379,7 +382,7 @@ class Listener implements IEventListener {
 		}
 	}
 
-	protected function sendSystemMessage(Room $room, string $message, array $parameters = [], Participant $participant = null): void {
+	protected function sendSystemMessage(Room $room, string $message, array $parameters = [], Participant $participant = null, bool $shouldSkipLastMessageUpdate = false): IComment {
 		if ($participant instanceof Participant) {
 			$actorType = $participant->getAttendee()->getActorType();
 			$actorId = $participant->getAttendee()->getActorId();
@@ -408,11 +411,13 @@ class Listener implements IEventListener {
 			$referenceId = (string) $referenceId;
 		}
 
-		$this->chatManager->addSystemMessage(
+		return $this->chatManager->addSystemMessage(
 			$room, $actorType, $actorId,
 			json_encode(['message' => $message, 'parameters' => $parameters]),
 			$this->timeFactory->getDateTime(), $message === 'file_shared',
-			$referenceId
+			$referenceId,
+			null,
+			$shouldSkipLastMessageUpdate
 		);
 	}
 

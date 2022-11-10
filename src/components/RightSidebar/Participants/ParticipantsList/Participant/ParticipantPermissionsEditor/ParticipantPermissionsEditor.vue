@@ -21,8 +21,7 @@
 
 <template>
 	<div class="wrapper">
-		<PermissionEditor
-			:display-name="displayName"
+		<PermissionEditor :display-name="displayName"
 			:permissions="permissions"
 			v-on="$listeners"
 			@submit="handleSubmitPermissions" />
@@ -97,9 +96,9 @@ export default {
 
 	methods: {
 		/**
-		 * Binary sum all the permissions and make the request to change them.
+		 *		 Binary sum all the permissions and make the request to change them.		 *		 * @param {number} permissions - the permission number.
 		 *
-		 * @param {number} permissions - the permission number.
+		 * @param permissions
 		 */
 		handleSubmitPermissions(permissions) {
 			try {

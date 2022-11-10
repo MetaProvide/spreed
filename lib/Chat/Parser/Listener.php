@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Talk\Chat\Parser;
 
+use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Chat\MessageParser;
 use OCA\Talk\Chat\Parser\Command as CommandParser;
 use OCA\Talk\Events\ChatMessageEvent;
@@ -33,24 +34,24 @@ class Listener {
 		$dispatcher->addListener(MessageParser::EVENT_MESSAGE_PARSE, static function (ChatMessageEvent $event) {
 			$message = $event->getMessage();
 
-			if ($message->getMessageType() !== 'comment') {
+			if ($message->getMessageType() !== ChatManager::VERB_MESSAGE) {
 				return;
 			}
 
 			/** @var UserMention $parser */
-			$parser = \OC::$server->query(UserMention::class);
+			$parser = \OC::$server->get(UserMention::class);
 			$parser->parseMessage($message);
 		}, -100);
 
 		$dispatcher->addListener(MessageParser::EVENT_MESSAGE_PARSE, static function (ChatMessageEvent $event) {
 			$message = $event->getMessage();
 
-			if ($message->getMessageType() !== 'comment') {
+			if ($message->getMessageType() !== ChatManager::VERB_MESSAGE) {
 				return;
 			}
 
 			/** @var Changelog $parser */
-			$parser = \OC::$server->query(Changelog::class);
+			$parser = \OC::$server->get(Changelog::class);
 			try {
 				$parser->parseMessage($message);
 				$event->stopPropagation();
@@ -62,12 +63,12 @@ class Listener {
 		$dispatcher->addListener(MessageParser::EVENT_MESSAGE_PARSE, static function (ChatMessageEvent $event) {
 			$message = $event->getMessage();
 
-			if ($message->getMessageType() !== 'system') {
+			if ($message->getMessageType() !== ChatManager::VERB_SYSTEM) {
 				return;
 			}
 
 			/** @var SystemMessage $parser */
-			$parser = \OC::$server->query(SystemMessage::class);
+			$parser = \OC::$server->get(SystemMessage::class);
 
 			try {
 				$parser->parseMessage($message);
@@ -80,12 +81,12 @@ class Listener {
 		$dispatcher->addListener(MessageParser::EVENT_MESSAGE_PARSE, static function (ChatMessageEvent $event) {
 			$chatMessage = $event->getMessage();
 
-			if ($chatMessage->getMessageType() !== 'command') {
+			if ($chatMessage->getMessageType() !== ChatManager::VERB_COMMAND) {
 				return;
 			}
 
 			/** @var CommandParser $parser */
-			$parser = \OC::$server->query(CommandParser::class);
+			$parser = \OC::$server->get(CommandParser::class);
 
 			try {
 				$parser->parseMessage($chatMessage);
@@ -100,12 +101,24 @@ class Listener {
 		$dispatcher->addListener(MessageParser::EVENT_MESSAGE_PARSE, static function (ChatMessageEvent $event) {
 			$chatMessage = $event->getMessage();
 
-			if ($chatMessage->getMessageType() !== 'comment_deleted') {
+			if ($chatMessage->getMessageType() !== ChatManager::VERB_REACTION && $chatMessage->getMessageType() !== ChatManager::VERB_REACTION_DELETED) {
+				return;
+			}
+
+			/** @var ReactionParser $parser */
+			$parser = \OC::$server->get(ReactionParser::class);
+			$parser->parseMessage($chatMessage);
+		});
+
+		$dispatcher->addListener(MessageParser::EVENT_MESSAGE_PARSE, static function (ChatMessageEvent $event) {
+			$chatMessage = $event->getMessage();
+
+			if ($chatMessage->getMessageType() !== ChatManager::VERB_MESSAGE_DELETED) {
 				return;
 			}
 
 			/** @var SystemMessage $parser */
-			$parser = \OC::$server->query(SystemMessage::class);
+			$parser = \OC::$server->get(SystemMessage::class);
 
 			try {
 				$parser->parseDeletedMessage($chatMessage);

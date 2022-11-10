@@ -28,8 +28,10 @@ use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Chat\CommentsManager;
 use OCA\Talk\Chat\Notifier;
 use OCA\Talk\Model\Attendee;
+use OCA\Talk\Model\AttendeeMapper;
 use OCA\Talk\Participant;
 use OCA\Talk\Room;
+use OCA\Talk\Service\AttachmentService;
 use OCA\Talk\Service\ParticipantService;
 use OCA\Talk\Share\RoomShareProvider;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -39,6 +41,9 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\ICacheFactory;
 use OCP\IUser;
 use OCP\Notification\IManager as INotificationManager;
+use OCP\Share\Exceptions\ShareNotFound;
+use OCP\Share\IManager;
+use OCP\Share\IShare;
 use PHPUnit\Framework\MockObject\MockObject;
 use Test\TestCase;
 
@@ -53,6 +58,8 @@ class ChatManagerTest extends TestCase {
 	protected $dispatcher;
 	/** @var INotificationManager|MockObject */
 	protected $notificationManager;
+	/** @var IManager|MockObject */
+	protected $shareManager;
 	/** @var RoomShareProvider|MockObject */
 	protected $shareProvider;
 	/** @var ParticipantService|MockObject */
@@ -61,8 +68,9 @@ class ChatManagerTest extends TestCase {
 	protected $notifier;
 	/** @var ITimeFactory|MockObject */
 	protected $timeFactory;
-	/** @var ChatManager */
-	protected $chatManager;
+	/** @var AttachmentService|MockObject */
+	protected $attachmentService;
+	protected ?ChatManager $chatManager = null;
 
 	public function setUp(): void {
 		parent::setUp();
@@ -70,10 +78,12 @@ class ChatManagerTest extends TestCase {
 		$this->commentsManager = $this->createMock(CommentsManager::class);
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 		$this->notificationManager = $this->createMock(INotificationManager::class);
+		$this->shareManager = $this->createMock(IManager::class);
 		$this->shareProvider = $this->createMock(RoomShareProvider::class);
 		$this->participantService = $this->createMock(ParticipantService::class);
 		$this->notifier = $this->createMock(Notifier::class);
 		$this->timeFactory = $this->createMock(ITimeFactory::class);
+		$this->attachmentService = $this->createMock(AttachmentService::class);
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 
 		$this->chatManager = new ChatManager(
@@ -81,11 +91,13 @@ class ChatManagerTest extends TestCase {
 			$this->dispatcher,
 			\OC::$server->getDatabaseConnection(),
 			$this->notificationManager,
+			$this->shareManager,
 			$this->shareProvider,
 			$this->participantService,
 			$this->notifier,
 			$cacheFactory,
-			$this->timeFactory
+			$this->timeFactory,
+			$this->attachmentService
 		);
 	}
 
@@ -103,11 +115,13 @@ class ChatManagerTest extends TestCase {
 					$this->dispatcher,
 					\OC::$server->getDatabaseConnection(),
 					$this->notificationManager,
+					$this->shareManager,
 					$this->shareProvider,
 					$this->participantService,
 					$this->notifier,
 					$cacheFactory,
 					$this->timeFactory,
+					$this->attachmentService,
 				])
 				->onlyMethods($methods)
 				->getMock();
@@ -118,11 +132,13 @@ class ChatManagerTest extends TestCase {
 			$this->dispatcher,
 			\OC::$server->getDatabaseConnection(),
 			$this->notificationManager,
+			$this->shareManager,
 			$this->shareProvider,
 			$this->participantService,
 			$this->notifier,
 			$cacheFactory,
-			$this->timeFactory
+			$this->timeFactory,
+			$this->attachmentService
 		);
 	}
 
@@ -390,6 +406,196 @@ class ChatManagerTest extends TestCase {
 			->with($chat);
 
 		$this->chatManager->deleteMessages($chat);
+	}
+
+	public function testDeleteMessage(): void {
+		$mapper = new AttendeeMapper(\OC::$server->getDatabaseConnection());
+		$attendee = $mapper->createAttendeeFromRow([
+			'a_id' => 1,
+			'room_id' => 123,
+			'actor_type' => Attendee::ACTOR_USERS,
+			'actor_id' => 'user',
+			'display_name' => 'user-display',
+			'pin' => '',
+			'participant_type' => Participant::USER,
+			'favorite' => true,
+			'notification_level' => Participant::NOTIFY_MENTION,
+			'notification_calls' => Participant::NOTIFY_CALLS_ON,
+			'last_joined_call' => 0,
+			'last_read_message' => 0,
+			'last_mention_message' => 0,
+			'last_mention_direct' => 0,
+			'read_privacy' => Participant::PRIVACY_PUBLIC,
+			'permissions' => Attendee::PERMISSIONS_DEFAULT,
+			'access_token' => '',
+			'remote_id' => '',
+		]);
+		$chat = $this->createMock(Room::class);
+		$chat->expects($this->any())
+			->method('getId')
+			->willReturn(1234);
+		$participant = new Participant($chat, $attendee, null);
+
+		$date = new \DateTime();
+
+		$comment = $this->createMock(IComment::class);
+		$comment->method('getId')
+			->willReturn('123456');
+		$comment->method('getVerb')
+			->willReturn('comment');
+		$comment->expects($this->once())
+			->method('setMessage');
+		$comment->expects($this->once())
+			->method('setVerb')
+			->with('comment_deleted');
+
+		$this->commentsManager->expects($this->once())
+			->method('save')
+			->with($comment);
+
+		$systemMessage = $this->createMock(IComment::class);
+
+		$chatManager = $this->getManager(['addSystemMessage']);
+		$chatManager->expects($this->once())
+			->method('addSystemMessage')
+			->with($chat, Attendee::ACTOR_USERS, 'user', $this->anything(), $this->anything(), false, null, 123456)
+			->willReturn($systemMessage);
+
+		$this->assertSame($systemMessage, $chatManager->deleteMessage($chat, $comment, $participant, $date));
+	}
+
+	public function testDeleteMessageFileShare(): void {
+		$mapper = new AttendeeMapper(\OC::$server->getDatabaseConnection());
+		$attendee = $mapper->createAttendeeFromRow([
+			'a_id' => 1,
+			'room_id' => 123,
+			'actor_type' => Attendee::ACTOR_USERS,
+			'actor_id' => 'user',
+			'display_name' => 'user-display',
+			'pin' => '',
+			'participant_type' => Participant::USER,
+			'favorite' => true,
+			'notification_level' => Participant::NOTIFY_MENTION,
+			'notification_calls' => Participant::NOTIFY_CALLS_ON,
+			'last_joined_call' => 0,
+			'last_read_message' => 0,
+			'last_mention_message' => 0,
+			'last_mention_direct' => 0,
+			'read_privacy' => Participant::PRIVACY_PUBLIC,
+			'permissions' => Attendee::PERMISSIONS_DEFAULT,
+			'access_token' => '',
+			'remote_id' => '',
+		]);
+		$chat = $this->createMock(Room::class);
+		$chat->expects($this->any())
+			->method('getId')
+			->willReturn(1234);
+		$chat->expects($this->any())
+			->method('getToken')
+			->willReturn('T0k3N');
+		$participant = new Participant($chat, $attendee, null);
+
+		$date = new \DateTime();
+
+		$comment = $this->createMock(IComment::class);
+		$comment->method('getId')
+			->willReturn('123456');
+		$comment->method('getVerb')
+			->willReturn('object_shared');
+		$comment->expects($this->once())
+			->method('getMessage')
+			->willReturn(json_encode(['message' => 'file_shared', 'parameters' => ['share' => '42']]));
+		$comment->expects($this->once())
+			->method('setMessage');
+		$comment->expects($this->once())
+			->method('setVerb')
+			->with('comment_deleted');
+
+		$share = $this->createMock(IShare::class);
+		$share->method('getShareType')
+			->willReturn(IShare::TYPE_ROOM);
+		$share->method('getSharedWith')
+			->willReturn('T0k3N');
+		$share->method('getShareOwner')
+			->willReturn('user');
+
+		$this->shareManager->method('getShareById')
+			->with('ocRoomShare:42')
+			->willReturn($share);
+
+		$this->shareManager->expects($this->once())
+			->method('deleteShare')
+			->willReturn($share);
+
+		$this->commentsManager->expects($this->once())
+			->method('save')
+			->with($comment);
+
+		$systemMessage = $this->createMock(IComment::class);
+
+		$chatManager = $this->getManager(['addSystemMessage']);
+		$chatManager->expects($this->once())
+			->method('addSystemMessage')
+			->with($chat, Attendee::ACTOR_USERS, 'user', $this->anything(), $this->anything(), false, null, 123456)
+			->willReturn($systemMessage);
+
+		$this->assertSame($systemMessage, $chatManager->deleteMessage($chat, $comment, $participant, $date));
+	}
+
+	public function testDeleteMessageFileShareNotFound(): void {
+		$mapper = new AttendeeMapper(\OC::$server->getDatabaseConnection());
+		$attendee = $mapper->createAttendeeFromRow([
+			'a_id' => 1,
+			'room_id' => 123,
+			'actor_type' => Attendee::ACTOR_USERS,
+			'actor_id' => 'user',
+			'display_name' => 'user-display',
+			'pin' => '',
+			'participant_type' => Participant::USER,
+			'favorite' => true,
+			'notification_level' => Participant::NOTIFY_MENTION,
+			'notification_calls' => Participant::NOTIFY_CALLS_ON,
+			'last_joined_call' => 0,
+			'last_read_message' => 0,
+			'last_mention_message' => 0,
+			'last_mention_direct' => 0,
+			'read_privacy' => Participant::PRIVACY_PUBLIC,
+			'permissions' => Attendee::PERMISSIONS_DEFAULT,
+			'access_token' => '',
+			'remote_id' => '',
+		]);
+		$chat = $this->createMock(Room::class);
+		$chat->expects($this->any())
+			->method('getId')
+			->willReturn(1234);
+		$participant = new Participant($chat, $attendee, null);
+
+		$date = new \DateTime();
+
+		$comment = $this->createMock(IComment::class);
+		$comment->method('getId')
+			->willReturn('123456');
+		$comment->method('getVerb')
+			->willReturn('object_shared');
+		$comment->expects($this->once())
+			->method('getMessage')
+			->willReturn(json_encode(['message' => 'file_shared', 'parameters' => ['share' => '42']]));
+
+		$this->shareManager->method('getShareById')
+			->with('ocRoomShare:42')
+			->willThrowException(new ShareNotFound());
+
+		$this->commentsManager->expects($this->never())
+			->method('save');
+
+		$systemMessage = $this->createMock(IComment::class);
+
+		$chatManager = $this->getManager(['addSystemMessage']);
+		$chatManager->expects($this->never())
+			->method('addSystemMessage');
+
+		$this->expectException(ShareNotFound::class);
+		$this->assertSame($systemMessage, $chatManager->deleteMessage($chat, $comment, $participant, $date));
 	}
 
 	public function testClearHistory(): void {

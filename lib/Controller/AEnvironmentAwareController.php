@@ -27,18 +27,15 @@ declare(strict_types=1);
 
 namespace OCA\Talk\Controller;
 
+use OC\AppFramework\Http\Dispatcher;
 use OCA\Talk\Participant;
 use OCA\Talk\Room;
 use OCP\AppFramework\OCSController;
 
 abstract class AEnvironmentAwareController extends OCSController {
-
-	/** @var int */
-	protected $apiVersion = 1;
-	/** @var Room */
-	protected $room;
-	/** @var Participant */
-	protected $participant;
+	protected int $apiVersion = 1;
+	protected ?Room $room = null;
+	protected ?Participant $participant = null;
 
 	public function setAPIVersion(int $apiVersion): void {
 		$this->apiVersion = $apiVersion;
@@ -62,5 +59,26 @@ abstract class AEnvironmentAwareController extends OCSController {
 
 	public function getParticipant(): ?Participant {
 		return $this->participant;
+	}
+
+	/**
+	 * Following the logic of {@see Dispatcher::executeController}
+	 * @return string Either 'json' or 'xml'
+	 */
+	public function getResponseFormat(): string {
+		// get format from the url format or request format parameter
+		$format = $this->request->getParam('format');
+
+		// if none is given try the first Accept header
+		if ($format === null) {
+			$headers = $this->request->getHeader('Accept');
+			/**
+			 * Default value of
+			 * @see OCSController::buildResponse()
+			 */
+			$format = $this->getResponderByHTTPHeader($headers, 'xml');
+		}
+
+		return $format;
 	}
 }

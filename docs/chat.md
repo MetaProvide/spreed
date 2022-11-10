@@ -50,6 +50,8 @@ Base endpoint is: `/ocs/v2.php/apps/spreed/api/v1`
         `message` | string | Message string with placeholders (see [Rich Object String](https://github.com/nextcloud/server/issues/1706))
         `messageParameters` | array | Message parameters for `message` (see [Rich Object String](https://github.com/nextcloud/server/issues/1706))
         `parent` | array | **Optional:** See `Parent data` below
+        `reactions` | array | **Optional:** An array map with relation between reaction emoji and total count of reactions with this emoji
+        `reactionsSelf` | array | **Optional:** When the user reacted this is the list of emojis the user reacted with
 
 #### Parent data
 
@@ -153,6 +155,57 @@ See [OCP\RichObjectStrings\Definitions](https://github.com/nextcloud/server/blob
 
 * Response: [See official OCS Share API docs](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html?highlight=sharing#create-a-new-share)
 
+## List overview of items shared into a chat
+
+* Required capability: `rich-object-list-media`
+* Method: `GET`
+* Endpoint: `/chat/{token}/share/overview`
+* Data:
+
+  field | type | Description
+  ---|---|---
+  `limit` | int  | Number of chat messages with shares you want to get
+
+* Response:
+    - Note: if a file was shared multiple times it will be returned multiple times
+    - Status code:
+        + `200 OK`
+        + `404 Not Found` When the conversation could not be found for the participant
+        + `412 Precondition Failed` When the lobby is active and the user is not a moderator
+
+    - Data:
+        + An array per item type
+            - Array of messages as defined in [Receive chat messages of a conversation](#receive-chat-messages-of-a-conversation)
+
+## List items of type shared in a chat
+
+* Required capability: `rich-object-list-media`
+* Method: `GET`
+* Endpoint: `/chat/{token}/share`
+* Data:
+
+  field | type | Description
+  ---|---|---
+  `objectType` | string | One of the [Constants - Shared item types](constants.md#shared-item-types)
+  `lastKnownMessageId` | int  | Serves as an offset for the query. The lastKnownMessageId for the next page is available in the `X-Chat-Last-Given` header.
+  `limit` | int  | Number of chat messages with shares you want to get
+
+* Response:
+    - Note: if a file was shared multiple times it will be returned multiple times
+    - Status code:
+        + `200 OK`
+        + `404 Not Found` When the conversation could not be found for the participant
+        + `412 Precondition Failed` When the lobby is active and the user is not a moderator
+
+    - Header:
+
+      field | type | Description
+      ---|---|---
+      `X-Chat-Last-Given` | int | Offset (lastKnownMessageId) for the next page.
+
+    - Data:
+      Array of messages as defined in [Receive chat messages of a conversation](#receive-chat-messages-of-a-conversation)
+
 ## Clear chat history
 
 * Required capability: `clear-history`
@@ -179,7 +232,7 @@ See [OCP\RichObjectStrings\Definitions](https://github.com/nextcloud/server/blob
 
 ## Deleting a chat message
 
-* Required capability: `delete-messages`
+* Required capability: `delete-messages` - `rich-object-delete` indicates if shared objects can be deleted from the chat
 * Method: `DELETE`
 * Endpoint: `/chat/{token}/{messageId}`
 
@@ -216,6 +269,25 @@ See [OCP\RichObjectStrings\Definitions](https://github.com/nextcloud/server/blob
     field | type | Description
     ---|---|---
     `lastReadMessage` | int | The last read message ID
+
+* Response:
+    - Status code:
+        + `200 OK`
+        + `404 Not Found` When the room could not be found for the participant,
+        or the participant is a guest.
+
+    - Header:
+
+        field | type | Description
+        ---|---|---
+        `X-Chat-Last-Common-Read` | int | ID of the last message read by every user that has read privacy set to public. When the user themself has it set to private the value the header is not set (only available with `chat-read-status` capability)
+
+
+## Mark chat as unread
+
+* Required capability: `chat-unread`
+* Method: `DELETE`
+* Endpoint: `/chat/{token}/read`
 
 * Response:
     - Status code:
@@ -305,3 +377,7 @@ See [OCP\RichObjectStrings\Definitions](https://github.com/nextcloud/server/blob
 * `matterbridge_config_removed` - {actor} removed the Matterbridge configuration
 * `matterbridge_config_enabled` - {actor} started Matterbridge
 * `matterbridge_config_disabled` - {actor} stopped Matterbridge
+* `reaction` - {reaction}
+* `reaction_deleted` - Reaction deleted by author (replacement of `reaction` after the action has been performed)
+* `reaction_revoked` - {actor} deleted a reaction (the action that will replace `reaction` with a `reaction_deleted` message)
+

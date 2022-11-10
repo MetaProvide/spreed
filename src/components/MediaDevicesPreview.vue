@@ -27,13 +27,11 @@
 		<div class="preview preview-audio">
 			<div v-if="!audioPreviewAvailable"
 				class="preview-not-available">
-				<AlertCircle
-					v-if="audioStreamError"
+				<AlertCircle v-if="audioStreamError"
 					:size="64"
 					title=""
 					fill-color="#999" />
-				<MicrophoneOff
-					v-else-if="!audioInputId"
+				<MicrophoneOff v-else-if="!audioInputId"
 					:size="64"
 					title=""
 					fill-color="#999" />
@@ -47,8 +45,7 @@
 				 reference is always valid once mounted. -->
 			<div v-show="audioPreviewAvailable"
 				class="volume-indicator-wrapper">
-				<Microphone
-					:size="64"
+				<Microphone :size="64"
 					title=""
 					fill-color="#999" />
 				<span ref="volumeIndicator"
@@ -63,13 +60,11 @@
 		<div class="preview preview-video">
 			<div v-if="!videoPreviewAvailable"
 				class="preview-not-available">
-				<AlertCircle
-					v-if="videoStreamError"
+				<AlertCircle v-if="videoStreamError"
 					:size="64"
 					title=""
 					fill-color="#999" />
-				<VideoOff
-					v-else-if="!videoInputId"
+				<VideoOff v-else-if="!videoInputId"
 					:size="64"
 					title=""
 					fill-color="#999" />

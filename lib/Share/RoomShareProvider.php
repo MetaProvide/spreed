@@ -29,8 +29,6 @@ declare(strict_types=1);
 namespace OCA\Talk\Share;
 
 use OC\Files\Cache\Cache;
-use OCA\Talk\Events\ParticipantEvent;
-use OCA\Talk\Events\RemoveUserEvent;
 use OCA\Talk\Events\RoomEvent;
 use OCA\Talk\Exceptions\ParticipantNotFoundException;
 use OCA\Talk\Exceptions\RoomNotFoundException;
@@ -73,24 +71,15 @@ class RoomShareProvider implements IShareProvider {
 	public const TALK_FOLDER = '/Talk';
 	public const TALK_FOLDER_PLACEHOLDER = '/{TALK_PLACEHOLDER}';
 
-	/** @var IDBConnection */
-	private $dbConnection;
-	/** @var ISecureRandom */
-	private $secureRandom;
-	/** @var IShareManager */
-	private $shareManager;
-	/** @var EventDispatcherInterface */
-	private $dispatcher;
-	/** @var Manager */
-	private $manager;
-	/** @var ParticipantService */
-	private $participantService;
-	/** @var ITimeFactory */
-	protected $timeFactory;
-	/** @var IL10N */
-	private $l;
-	/** @var IMimeTypeLoader */
-	private $mimeTypeLoader;
+	private IDBConnection $dbConnection;
+	private ISecureRandom $secureRandom;
+	private IShareManager $shareManager;
+	private EventDispatcherInterface $dispatcher;
+	private Manager $manager;
+	private ParticipantService $participantService;
+	protected ITimeFactory $timeFactory;
+	private IL10N $l;
+	private IMimeTypeLoader $mimeTypeLoader;
 
 	public function __construct(
 			IDBConnection $connection,
@@ -115,31 +104,11 @@ class RoomShareProvider implements IShareProvider {
 	}
 
 	public static function register(IEventDispatcher $dispatcher): void {
-		$listener = static function (ParticipantEvent $event): void {
-			$room = $event->getRoom();
-
-			if ($event->getParticipant()->getAttendee()->getParticipantType() === Participant::USER_SELF_JOINED) {
-				/** @var self $roomShareProvider */
-				$roomShareProvider = \OC::$server->query(self::class);
-				$roomShareProvider->deleteInRoom($room->getToken(), $event->getParticipant()->getAttendee()->getActorId());
-			}
-		};
-		$dispatcher->addListener(Room::EVENT_AFTER_ROOM_DISCONNECT, $listener);
-
-		$listener = static function (RemoveUserEvent $event): void {
-			$room = $event->getRoom();
-
-			/** @var self $roomShareProvider */
-			$roomShareProvider = \OC::$server->query(self::class);
-			$roomShareProvider->deleteInRoom($room->getToken(), $event->getUser()->getUID());
-		};
-		$dispatcher->addListener(Room::EVENT_AFTER_USER_REMOVE, $listener);
-
 		$listener = static function (RoomEvent $event): void {
 			$room = $event->getRoom();
 
 			/** @var self $roomShareProvider */
-			$roomShareProvider = \OC::$server->query(self::class);
+			$roomShareProvider = \OC::$server->get(self::class);
 			$roomShareProvider->deleteInRoom($room->getToken());
 		};
 		$dispatcher->addListener(Room::EVENT_AFTER_ROOM_DELETE, $listener);
@@ -192,7 +161,7 @@ class RoomShareProvider implements IShareProvider {
 		$share->setToken(
 			$this->secureRandom->generate(
 				15, // \OC\Share\Constants::TOKEN_LENGTH
-				\OCP\Security\ISecureRandom::CHAR_HUMAN_READABLE
+				ISecureRandom::CHAR_HUMAN_READABLE
 			)
 		);
 
@@ -294,7 +263,7 @@ class RoomShareProvider implements IShareProvider {
 	 */
 	private function createShareObject(array $data): IShare {
 		$share = $this->shareManager->newShare();
-		$share->setId((int)$data['id'])
+		$share->setId($data['id'])
 			->setShareType((int)$data['share_type'])
 			->setPermissions((int)$data['permissions'])
 			->setTarget($data['file_target'])
@@ -478,7 +447,7 @@ class RoomShareProvider implements IShareProvider {
 
 		$update->executeStatement();
 
-		return $this->getShareById($share->getId(), $recipient);
+		return $this->getShareById((int) $share->getId(), $recipient);
 	}
 
 	/**
@@ -574,7 +543,7 @@ class RoomShareProvider implements IShareProvider {
 			);
 		}
 
-		$qb->innerJoin('s', 'filecache' ,'f', $qb->expr()->eq('s.file_source', 'f.fileid'));
+		$qb->innerJoin('s', 'filecache', 'f', $qb->expr()->eq('s.file_source', 'f.fileid'));
 		$qb->andWhere($qb->expr()->eq('f.parent', $qb->createNamedParameter($node->getId())));
 
 		$qb->orderBy('s.id');
@@ -979,12 +948,12 @@ class RoomShareProvider implements IShareProvider {
 
 				$userList = $this->participantService->getParticipantUserIds($room);
 				foreach ($userList as $uid) {
-					$users[$uid] = $users[$uid] ?? [];
+					$users[$uid] ??= [];
 					$users[$uid][$row['id']] = $row;
 				}
 			} elseif ($type === self::SHARE_TYPE_USERROOM && $currentAccess === true) {
 				$uid = $row['share_with'];
-				$users[$uid] = $users[$uid] ?? [];
+				$users[$uid] ??= [];
 				$users[$uid][$row['id']] = $row;
 			}
 		}

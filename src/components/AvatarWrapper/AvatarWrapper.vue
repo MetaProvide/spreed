@@ -20,8 +20,7 @@
 -->
 
 <template>
-	<div
-		class="avatar-wrapper"
+	<div class="avatar-wrapper"
 		:class="{'offline': offline}">
 		<div v-if="iconClass"
 			class="icon"
@@ -29,7 +28,7 @@
 		<Avatar v-else-if="!isGuest"
 			:user="id"
 			:display-name="name"
-			:menu-container="menuContainer"
+			:menu-container="menuContainerWithFallback"
 			menu-position="left"
 			:disable-tooltip="disableTooltip"
 			:disable-menu="disableMenu"
@@ -98,6 +97,11 @@ export default {
 			type: Object,
 			default: undefined,
 		},
+
+		menuContainer: {
+			type: String,
+			default: undefined,
+		},
 	},
 	computed: {
 		// Determines which icon is displayed
@@ -118,10 +122,10 @@ export default {
 			const customName = this.name !== t('spreed', 'Guest') ? this.name : '?'
 			return customName.charAt(0)
 		},
-		menuContainer() {
-			return this.$store.getters.getMainContainerSelector()
+		menuContainerWithFallback() {
+			return this.menuContainer ? this.menuContainer : this.$store.getters.getMainContainerSelector()
 		},
-		// Takes the the size prop and makes it a string for the classes
+		// Takes the size prop and makes it a string for the classes
 		sizeToString() {
 			return this.size.toString()
 		},
@@ -130,12 +134,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '../../assets/avatar';
 
 .avatar-wrapper {
 	$avatar-size: 44px;
 	height: $avatar-size;
 	width: $avatar-size;
-	@import '../../assets/avatar.scss';
 	@include avatar-mixin($avatar-size);
 }
 

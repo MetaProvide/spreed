@@ -21,8 +21,7 @@
 
 <template>
 	<div class="conversation-type">
-		<input
-			id="checkbox"
+		<input id="checkbox"
 			type="checkbox"
 			class="checkbox"
 			:checked="value"
@@ -44,9 +43,9 @@ export default {
 	},
 	methods: {
 		/**
-		 * Emits the input event with the checked bulean as a value
+		 *		 Emits the input event with the checked bulean as a value		 *		 * @param {object} event The checkbox click event object.
 		 *
-		 * @param {object} event The checkbox click event object.
+		 * @param event
 		 */
 		handleInput(event) {
 			this.$emit('input', event.target.checked)

@@ -27,7 +27,6 @@ use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Config;
 use OCA\Talk\Events\AddParticipantsEvent;
 use OCA\Talk\Events\ChatEvent;
-use OCA\Talk\Events\ChatParticipantEvent;
 use OCA\Talk\Events\DuplicatedParticipantEvent;
 use OCA\Talk\Events\EndCallForEveryoneEvent;
 use OCA\Talk\Events\ModifyEveryoneEvent;
@@ -37,7 +36,6 @@ use OCA\Talk\Events\RemoveParticipantEvent;
 use OCA\Talk\Events\RemoveUserEvent;
 use OCA\Talk\Events\RoomEvent;
 use OCA\Talk\GuestManager;
-use OCA\Talk\Model\Session;
 use OCA\Talk\Participant;
 use OCA\Talk\Room;
 use OCA\Talk\Service\ParticipantService;
@@ -52,7 +50,7 @@ class Listener {
 
 	protected static function isUsingInternalSignaling(): bool {
 		/** @var Config $config */
-		$config = \OC::$server->query(Config::class);
+		$config = \OC::$server->get(Config::class);
 		return $config->getSignalingMode() === Config::SIGNALING_INTERNAL;
 	}
 
@@ -63,7 +61,7 @@ class Listener {
 			}
 
 			/** @var Messages $messages */
-			$messages = \OC::$server->query(Messages::class);
+			$messages = \OC::$server->get(Messages::class);
 			$messages->addMessageForAllParticipants($event->getRoom(), 'refresh-participant-list');
 		};
 		$dispatcher->addListener(Room::EVENT_AFTER_ROOM_CONNECT, $listener);
@@ -82,7 +80,7 @@ class Listener {
 			$room = $event->getRoom();
 
 			/** @var Messages $messages */
-			$messages = \OC::$server->query(Messages::class);
+			$messages = \OC::$server->get(Messages::class);
 			$messages->addMessageForAllParticipants($room, 'refresh-participant-list');
 		};
 		$dispatcher->addListener(Room::EVENT_BEFORE_USER_REMOVE, $listener);
@@ -97,7 +95,7 @@ class Listener {
 			}
 
 			/** @var Messages $messages */
-			$messages = \OC::$server->query(Messages::class);
+			$messages = \OC::$server->get(Messages::class);
 			$messages->addMessageForAllParticipants($room, 'refresh-participant-list');
 		};
 		$dispatcher->addListener(Room::EVENT_BEFORE_ROOM_DELETE, $listener);
@@ -110,7 +108,7 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			$notifier->roomInvited($event->getRoom(), $event->getParticipants());
 		});
@@ -120,7 +118,7 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			$notifier->roomModified($event->getRoom());
 		};
@@ -143,7 +141,7 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			$sessionIds = [];
 			// If the participant is not active in the room the "participants"
@@ -151,7 +149,7 @@ class Listener {
 			// property.
 
 			/** @var SessionService $sessionService */
-			$sessionService = \OC::$server->query(SessionService::class);
+			$sessionService = \OC::$server->get(SessionService::class);
 			$sessions = $sessionService->getAllSessionsForAttendee($event->getParticipant()->getAttendee());
 			foreach ($sessions as $session) {
 				$sessionIds[] = $session->getSessionId();
@@ -202,9 +200,9 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 			/** @var ParticipantService $participantService */
-			$participantService = \OC::$server->query(ParticipantService::class);
+			$participantService = \OC::$server->get(ParticipantService::class);
 
 			$room = $event->getRoom();
 			$notifier->roomDeleted($room, $participantService->getParticipantUserIds($room));
@@ -215,7 +213,7 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			$notifier->roomsDisinvited($event->getRoom(), [$event->getUser()->getUID()]);
 		});
@@ -225,20 +223,13 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			$sessionIds = [];
 
-			/** @var SessionService $sessionService */
-			$sessionService = \OC::$server->query(SessionService::class);
-			$sessions = $sessionService->getAllSessionsForAttendee($event->getParticipant()->getAttendee());
+			$sessions = $event->getSessions();
 			foreach ($sessions as $session) {
 				$sessionIds[] = $session->getSessionId();
-			}
-
-			if ($event->getParticipant()->getSession()) {
-				$sessionIds[] = $event->getParticipant()->getSession()->getSessionId();
-				$notifier->roomSessionsRemoved($event->getRoom(), $sessionIds);
 			}
 
 			if (!empty($sessionIds)) {
@@ -251,7 +242,7 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			$sessionIds = [];
 			if ($event->getParticipant()->getSession()) {
@@ -285,15 +276,11 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			$sessionIds = [];
-
-			/** @var SessionService $sessionService */
-			$sessionService = \OC::$server->query(SessionService::class);
-			$sessions = $sessionService->getAllSessionsForAttendee($event->getParticipant()->getAttendee());
-			foreach ($sessions as $session) {
-				$sessionIds[] = $session->getSessionId();
+			if ($event->getParticipant()->getSession()) {
+				$sessionIds[] = $event->getParticipant()->getSession()->getSessionId();
 			}
 
 			if (!empty($sessionIds)) {
@@ -335,7 +322,7 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			// TODO: The list of removed session ids should be passed through the event
 			// so the signaling server can optimize forwarding the message.
@@ -348,12 +335,12 @@ class Listener {
 			}
 
 			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+			$notifier = \OC::$server->get(BackendNotifier::class);
 
 			$sessionIds = [];
 
 			/** @var SessionService $sessionService */
-			$sessionService = \OC::$server->query(SessionService::class);
+			$sessionService = \OC::$server->get(SessionService::class);
 			$sessions = $sessionService->getAllSessionsForAttendee($event->getParticipant()->getAttendee());
 			foreach ($sessions as $session) {
 				$sessionIds[] = $session->getSessionId();
@@ -363,39 +350,31 @@ class Listener {
 				$notifier->participantsModified($event->getRoom(), $sessionIds);
 			}
 		});
-		$dispatcher->addListener(ChatManager::EVENT_AFTER_MESSAGE_SEND , static function (ChatParticipantEvent $event) {
-			if (self::isUsingInternalSignaling()) {
-				return;
-			}
 
-			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+		$dispatcher->addListener(ChatManager::EVENT_AFTER_MESSAGE_SEND, [self::class, 'notifyUsersViaExternalSignalingToRefreshTheChat']);
+		$dispatcher->addListener(ChatManager::EVENT_AFTER_SYSTEM_MESSAGE_SEND, [self::class, 'notifyUsersViaExternalSignalingToRefreshTheChat']);
+		$dispatcher->addListener(ChatManager::EVENT_AFTER_MULTIPLE_SYSTEM_MESSAGE_SEND, [self::class, 'notifyUsersViaExternalSignalingToRefreshTheChat']);
+	}
 
-			$room = $event->getRoom();
-			$message = [
-				'type' => 'chat',
-				'chat' => [
-					'refresh' => true,
-				],
-			];
-			$notifier->sendRoomMessage($room, $message);
-		});
-		$dispatcher->addListener(ChatManager::EVENT_AFTER_SYSTEM_MESSAGE_SEND, static function (ChatEvent $event) {
-			if (self::isUsingInternalSignaling()) {
-				return;
-			}
+	public static function notifyUsersViaExternalSignalingToRefreshTheChat(ChatEvent $event): void {
+		if (self::isUsingInternalSignaling()) {
+			return;
+		}
 
-			/** @var BackendNotifier $notifier */
-			$notifier = \OC::$server->query(BackendNotifier::class);
+		if ($event->shouldSkipLastActivityUpdate()) {
+			return;
+		}
 
-			$room = $event->getRoom();
-			$message = [
-				'type' => 'chat',
-				'chat' => [
-					'refresh' => true,
-				],
-			];
-			$notifier->sendRoomMessage($room, $message);
-		});
+		/** @var BackendNotifier $notifier */
+		$notifier = \OC::$server->get(BackendNotifier::class);
+
+		$room = $event->getRoom();
+		$message = [
+			'type' => 'chat',
+			'chat' => [
+				'refresh' => true,
+			],
+		];
+		$notifier->sendRoomMessage($room, $message);
 	}
 }

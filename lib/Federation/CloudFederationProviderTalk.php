@@ -28,6 +28,7 @@ namespace OCA\Talk\Federation;
 use Exception;
 use OCA\FederatedFileSharing\AddressHandler;
 use OCA\Talk\AppInfo\Application;
+use OCA\Talk\Config;
 use OCA\Talk\Manager;
 use OCA\Talk\Model\Attendee;
 use OCA\Talk\Model\AttendeeMapper;
@@ -50,35 +51,29 @@ use OCP\Notification\IManager as INotificationManager;
 use OCP\Share\Exceptions\ShareNotFound;
 
 class CloudFederationProviderTalk implements ICloudFederationProvider {
+	private IUserManager $userManager;
 
-	/** @var IUserManager */
-	private $userManager;
+	private AddressHandler $addressHandler;
 
-	/** @var AddressHandler */
-	private $addressHandler;
+	private FederationManager $federationManager;
 
-	/** @var FederationManager */
-	private $federationManager;
+	private Config $config;
 
-	/** @var INotificationManager */
-	private $notificationManager;
+	private INotificationManager $notificationManager;
 
-	/** @var IURLGenerator */
-	private $urlGenerator;
+	private IURLGenerator $urlGenerator;
 
-	/** @var ParticipantService  */
-	private $participantService;
+	private ParticipantService $participantService;
 
-	/** @var AttendeeMapper  */
-	private $attendeeMapper;
+	private AttendeeMapper $attendeeMapper;
 
-	/** @var Manager  */
-	private $manager;
+	private Manager $manager;
 
 	public function __construct(
 		IUserManager $userManager,
 		AddressHandler $addressHandler,
 		FederationManager $federationManager,
+		Config $config,
 		INotificationManager $notificationManager,
 		IURLGenerator $urlGenerator,
 		ParticipantService $participantService,
@@ -88,6 +83,7 @@ class CloudFederationProviderTalk implements ICloudFederationProvider {
 		$this->userManager = $userManager;
 		$this->addressHandler = $addressHandler;
 		$this->federationManager = $federationManager;
+		$this->config = $config;
 		$this->notificationManager = $notificationManager;
 		$this->urlGenerator = $urlGenerator;
 		$this->participantService = $participantService;
@@ -108,7 +104,7 @@ class CloudFederationProviderTalk implements ICloudFederationProvider {
 	 * @throws DBException
 	 */
 	public function shareReceived(ICloudFederationShare $share): string {
-		if (!$this->federationManager->isEnabled()) {
+		if (!$this->config->isFederationEnabled()) {
 			throw new ProviderCouldNotAddShareException('Server does not support talk federation', '', Http::STATUS_SERVICE_UNAVAILABLE);
 		}
 		if (!in_array($share->getShareType(), $this->getSupportedShareTypes(), true)) {
@@ -143,7 +139,7 @@ class CloudFederationProviderTalk implements ICloudFederationProvider {
 		if ($remote && $shareSecret && $shareWith && $roomToken && $remoteId && is_string($roomName) && $roomName && $owner) {
 			$shareWith = $this->userManager->get($shareWith);
 			if ($shareWith === null) {
-				throw new ProviderCouldNotAddShareException('User does not exist', '',Http::STATUS_BAD_REQUEST);
+				throw new ProviderCouldNotAddShareException('User does not exist', '', Http::STATUS_BAD_REQUEST);
 			}
 
 			$shareId = (string) $this->federationManager->addRemoteRoom($shareWith, $remoteId, $roomType, $roomName, $roomToken, $remote, $shareSecret);
@@ -232,7 +228,7 @@ class CloudFederationProviderTalk implements ICloudFederationProvider {
 	 * @throws ShareNotFound
 	 */
 	private function getAttendeeAndValidate(int $id, string $sharedSecret): Attendee {
-		if (!$this->federationManager->isEnabled()) {
+		if (!$this->config->isFederationEnabled()) {
 			throw new ActionNotSupportedException('Server does not support Talk federation');
 		}
 
@@ -275,7 +271,7 @@ class CloudFederationProviderTalk implements ICloudFederationProvider {
 		return $attendee;
 	}
 
-	private function notifyAboutNewShare(IUser $shareWith, string $shareId, string $sharedByFederatedId, string $sharedByName, string $roomName, string $roomToken, string $serverUrl) {
+	private function notifyAboutNewShare(IUser $shareWith, string $shareId, string $sharedByFederatedId, string $sharedByName, string $roomName, string $roomToken, string $serverUrl): void {
 		$notification = $this->notificationManager->createNotification();
 		$notification->setApp(Application::APP_ID)
 			->setUser($shareWith->getUID())

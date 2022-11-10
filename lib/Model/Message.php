@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Talk\Model;
 
+use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Participant;
 use OCA\Talk\Room;
 use OCP\Comments\IComment;
@@ -160,13 +161,22 @@ class Message {
 			return false;
 		}
 
-		return $this->getMessageType() !== 'system' &&
-			$this->getMessageType() !== 'command' &&
-			$this->getMessageType() !== 'comment_deleted' &&
+		return $this->getMessageType() !== ChatManager::VERB_SYSTEM &&
+			$this->getMessageType() !== ChatManager::VERB_COMMAND &&
+			$this->getMessageType() !== ChatManager::VERB_MESSAGE_DELETED &&
+			$this->getMessageType() !== ChatManager::VERB_REACTION &&
+			$this->getMessageType() !== ChatManager::VERB_REACTION_DELETED &&
 			\in_array($this->getActorType(), [Attendee::ACTOR_USERS, Attendee::ACTOR_GUESTS]);
 	}
 
-	public function toArray(): array {
+	public function toArray(string $format): array {
+		$reactions = $this->getComment()->getReactions();
+		if ($format === 'json' && empty($reactions)) {
+			// Cheating here to make sure the reactions array is always a
+			// JSON object on the API, even when there is no reaction at all.
+			$reactions = new \StdClass();
+		}
+
 		$data = [
 			'id' => (int) $this->getComment()->getId(),
 			'token' => $this->getRoom()->getToken(),
@@ -176,13 +186,14 @@ class Message {
 			'timestamp' => $this->getComment()->getCreationDateTime()->getTimestamp(),
 			'message' => $this->getMessage(),
 			'messageParameters' => $this->getMessageParameters(),
-			'systemMessage' => $this->getMessageType() === 'system' ? $this->getMessageRaw() : '',
+			'systemMessage' => $this->getMessageType() === ChatManager::VERB_SYSTEM ? $this->getMessageRaw() : '',
 			'messageType' => $this->getMessageType(),
 			'isReplyable' => $this->isReplyable(),
 			'referenceId' => (string) $this->getComment()->getReferenceId(),
+			'reactions' => $reactions,
 		];
 
-		if ($this->getMessageType() === 'comment_deleted') {
+		if ($this->getMessageType() === ChatManager::VERB_MESSAGE_DELETED) {
 			$data['deleted'] = true;
 		}
 

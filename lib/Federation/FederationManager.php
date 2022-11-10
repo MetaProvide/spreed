@@ -53,20 +53,15 @@ class FederationManager {
 	public const TALK_PROTOCOL_NAME = 'nctalk';
 	public const TOKEN_LENGTH = 15;
 
-	/** @var IConfig */
-	private $config;
+	private IConfig $config;
 
-	/** @var Manager */
-	private $manager;
+	private Manager $manager;
 
-	/** @var ParticipantService */
-	private $participantService;
+	private ParticipantService $participantService;
 
-	/** @var InvitationMapper */
-	private $invitationMapper;
+	private InvitationMapper $invitationMapper;
 
-	/** @var Notifications */
-	private $notifications;
+	private Notifications $notifications;
 
 	public function __construct(
 		IConfig $config,
@@ -135,7 +130,7 @@ class FederationManager {
 		// Add user to the room
 		$room = $this->manager->getRoomById($invitation->getRoomId());
 		if (
-			!$this->notifications->sendShareAccepted($room->getServerUrl(), $invitation->getRemoteId(), $invitation->getAccessToken())
+			!$this->notifications->sendShareAccepted($room->getRemoteServer(), $invitation->getRemoteId(), $invitation->getAccessToken())
 		) {
 			throw new CannotReachRemoteException();
 		}
@@ -147,7 +142,7 @@ class FederationManager {
 				'actorId' => $user->getUID(),
 				'displayName' => $user->getDisplayName(),
 				'accessToken' => $invitation->getAccessToken(),
-				'remoteId' => $invitation->getRemoteId(),
+				'remoteId' => $invitation->getRemoteId(), // FIXME this seems unnecessary
 			]
 		];
 		$this->participantService->addUsers($room, $participant, $user);
@@ -171,7 +166,16 @@ class FederationManager {
 
 		$this->invitationMapper->delete($invitation);
 
-		$this->notifications->sendShareDeclined($room->getServerUrl(), $invitation->getRemoteId(), $invitation->getAccessToken());
+		$this->notifications->sendShareDeclined($room->getRemoteServer(), $invitation->getRemoteId(), $invitation->getAccessToken());
+	}
+
+	/**
+	 * @param IUser $user
+	 * @return Invitation[]
+	 * @throws DBException
+	 */
+	public function getRemoteRoomShares(IUser $user): array {
+		return $this->invitationMapper->getInvitationsForUser($user);
 	}
 
 	/**

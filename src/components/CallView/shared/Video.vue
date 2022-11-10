@@ -30,32 +30,27 @@
 			<div v-show="showVideo"
 				:class="videoWrapperClass"
 				class="videoWrapper">
-				<video
-					ref="video"
+				<video ref="video"
 					:disablePictureInPicture="!isBig"
 					:class="videoClass"
 					class="video" />
 			</div>
 		</transition>
 		<transition name="fade">
-			<Screen
-				v-if="showSharedScreen"
+			<Screen v-if="showSharedScreen"
 				:is-big="isBig"
 				:token="token"
 				:call-participant-model="model"
 				:shared-data="sharedData" />
 		</transition>
 		<transition-group name="fade">
-			<div
-				v-if="showBackgroundAndAvatar"
+			<div v-if="showBackgroundAndAvatar"
 				:key="'backgroundAvatar'"
 				class="avatar-container">
 				<template v-if="participantUserId">
-					<VideoBackground
-						:display-name="participantName"
+					<VideoBackground :display-name="participantName"
 						:user="participantUserId" />
-					<Avatar
-						:size="avatarSize"
+					<Avatar :size="avatarSize"
 						:disable-menu="true"
 						:disable-tooltip="true"
 						:user="participantUserId"
@@ -64,10 +59,8 @@
 						:class="avatarClass" />
 				</template>
 				<template v-else>
-					<VideoBackground
-						:display-name="participantName" />
-					<div
-						:class="guestAvatarClass"
+					<VideoBackground :display-name="participantName" />
+					<div :class="guestAvatarClass"
 						class="avatar guest">
 						{{ firstLetterOfGuestName }}
 					</div>
@@ -187,12 +180,12 @@ export default {
 			return this.model.attributes.connectedAtLeastOnce
 		},
 
-		isNotConnected() {
-			return this.model.attributes.connectionState !== ConnectionState.CONNECTED && this.model.attributes.connectionState !== ConnectionState.COMPLETED
+		isConnected() {
+			return this.model.attributes.connectionState === ConnectionState.CONNECTED || this.model.attributes.connectionState === ConnectionState.COMPLETED
 		},
 
 		isLoading() {
-			return this.isNotConnected && this.model.attributes.connectionState !== ConnectionState.FAILED_NO_RESTART
+			return !this.isConnected && this.model.attributes.connectionState !== ConnectionState.FAILED_NO_RESTART
 		},
 
 		isDisconnected() {
@@ -211,11 +204,15 @@ export default {
 		 * received yet). Similarly both "negotiating" and "connecting" need to
 		 * be checked, as the negotiation will start before the connection
 		 * attempt is started.
+		 *
+		 * If the negotiation is done while there is still a connection it is
+		 * not regarded as reconnecting, as in that case it is a renegotiation
+		 * to update the current connection.
 		 */
 		isReconnecting() {
 			return this.model.attributes.connectionState === ConnectionState.FAILED
 				|| (!this.model.attributes.initialConnection
-					&& (this.model.attributes.negotiating || this.model.attributes.connecting))
+					&& ((this.model.attributes.negotiating && !this.isConnected) || this.model.attributes.connecting))
 		},
 
 		isNoLongerTryingToReconnect() {
@@ -249,7 +246,7 @@ export default {
 		containerClass() {
 			return {
 				'videoContainer-dummy': this.placeholderForPromoted,
-				'not-connected': !this.placeholderForPromoted && this.isNotConnected,
+				'not-connected': !this.placeholderForPromoted && !this.isConnected,
 				speaking: !this.placeholderForPromoted && this.model.attributes.speaking,
 				promoted: !this.placeholderForPromoted && this.sharedData.promoted && !this.isGrid,
 				'video-container-grid': this.isGrid,
@@ -378,7 +375,7 @@ export default {
 		},
 
 		hasVideo() {
-			return this.model.attributes.videoAvailable && this.sharedData.videoEnabled && (typeof this.model.attributes.stream === 'object')
+			return !this.model.attributes.videoBlocked && this.model.attributes.videoAvailable && this.sharedData.remoteVideoBlocker.isVideoEnabled() && (typeof this.model.attributes.stream === 'object')
 		},
 
 		hasSelectedVideo() {
@@ -476,8 +473,14 @@ export default {
 	},
 
 	mounted() {
+		this.sharedData.remoteVideoBlocker.increaseVisibleCounter()
+
 		// Set initial state
 		this._setStream(this.model.attributes.stream)
+	},
+
+	destroyed() {
+		this.sharedData.remoteVideoBlocker.decreaseVisibleCounter()
 	},
 
 	methods: {
@@ -515,14 +518,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '../../../assets/avatar';
+@import '../../../assets/variables';
+@include avatar-mixin(64px);
+@include avatar-mixin(128px);
+
 .forced-white {
 	filter: drop-shadow(1px 1px 4px var(--color-box-shadow));
 }
-
-@import '../../../assets/avatar.scss';
-@import '../../../assets/variables.scss';
-@include avatar-mixin(64px);
-@include avatar-mixin(128px);
 
 .not-connected {
 	video,

@@ -186,7 +186,7 @@ function checkStartPublishOwnPeer(signaling) {
 		}
 
 		if (currentSessionId !== signaling.getSessionId()) {
-			console.debug('No answer received for own peer but current session id changed, not sending offer again')
+			console.debug('No answer received for own peer but current session id changed, not sending offer again', currentSessionId, signaling.getSessionId())
 
 			clearInterval(delayedConnectionToPeer[currentSessionId])
 			delete delayedConnectionToPeer[currentSessionId]
@@ -194,7 +194,7 @@ function checkStartPublishOwnPeer(signaling) {
 			return
 		}
 
-		console.debug('No answer received for own peer, sending offer again')
+		console.debug('No answer received for own peer, sending offer again', currentSessionId)
 		createPeer()
 	}, 10000)
 }
@@ -367,8 +367,12 @@ function usersChanged(signaling, newUsers, disconnectedSessionIds) {
 				// TODO(jojo): Already create peer object to avoid duplicate offers.
 				signaling.requestOffer(user, 'video')
 
+				// Clearing the previous delayedConnectionToPeer should not be
+				// needed here, but just in case.
+				clearInterval(delayedConnectionToPeer[user.sessionId])
+
 				delayedConnectionToPeer[user.sessionId] = setInterval(function() {
-					console.debug('No offer received for new peer, request offer again')
+					console.debug('No offer received for new peer, request offer again', sessionId)
 
 					signaling.requestOffer(user, 'video')
 				}, 10000)
@@ -376,7 +380,7 @@ function usersChanged(signaling, newUsers, disconnectedSessionIds) {
 				// To avoid overloading the user joining a room (who previously called
 				// all the other participants), we decide who calls who by comparing
 				// the session ids of the users: "larger" ids call "smaller" ones.
-				console.debug('Starting call with', user)
+				console.debug('Starting call with', user, sessionId)
 				createPeer()
 			} else if (!useMcu && userHasStreams(selfInCall) && userHasStreams(user) && sessionId > currentSessionId) {
 				// If the remote peer is not aware that it was disconnected
@@ -394,11 +398,11 @@ function usersChanged(signaling, newUsers, disconnectedSessionIds) {
 						peer.end()
 					})
 
-					console.debug('No offer nor answer received, sending offer again')
+					console.debug('No offer nor answer received, sending offer again', sessionId)
 					createPeer()
 				}, 10000)
 			} else {
-				console.debug('User has no streams, not sending another offer')
+				console.debug('User has no streams, not sending another offer', sessionId)
 			}
 		}
 
@@ -676,7 +680,6 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 	})
 
 	webrtc = new SimpleWebRTC({
-		remoteVideosEl: '',
 		autoRequestMedia: true,
 		debug: false,
 		autoAdjustMic: false,
@@ -716,8 +719,11 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 	const sendDataChannelToAll = function(channel, message, payload) {
 		// If running with MCU, the message must be sent through the
 		// publishing peer and will be distributed by the MCU to subscribers.
-		if (ownPeer && signaling.hasFeature && signaling.hasFeature('mcu')) {
-			ownPeer.sendDirectly(channel, message, payload)
+		if (signaling.hasFeature && signaling.hasFeature('mcu')) {
+			if (ownPeer) {
+				ownPeer.sendDirectly(channel, message, payload)
+			}
+
 			return
 		}
 		webrtc.sendDirectlyToAll(channel, message, payload)
@@ -763,7 +769,7 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 					if (peer.pc.localDescription.type === 'offer'
 							&& peer.pc.signalingState === 'stable') {
 						spreedPeerConnectionTable[peer.id]++
-						console.debug('ICE restart after disconnect.', peer)
+						console.debug('ICE restart after disconnect.', peer.id, peer)
 						peer.icerestart()
 					}
 				}
@@ -793,23 +799,25 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 				if (peer.pc.localDescription.type === 'offer'
 						&& peer.pc.signalingState === 'stable') {
 					spreedPeerConnectionTable[peer.id]++
-					console.debug('ICE restart after failure.', peer)
+					console.debug('ICE restart after failure.', peer.id, peer)
 					peer.icerestart()
 				}
 			} else {
-				console.error('ICE failed after 5 tries.', peer)
+				console.error('ICE failed after 5 tries.', peer.id, peer)
 
 				peer.emit('extendedIceConnectionStateChange', 'failed-no-restart')
 			}
 		} else {
 			// This handles ICE failures of a receiver peer; ICE failures of
 			// the sender peer are handled in the "iceFailed" event.
-			console.debug('Request offer again', peer)
+			console.debug('Request offer again', peer.id, peer)
 
 			signaling.requestOffer(peer.id, 'video')
 
+			clearInterval(delayedConnectionToPeer[peer.id])
+
 			delayedConnectionToPeer[peer.id] = setInterval(function() {
-				console.debug('No offer received, request offer again', peer)
+				console.debug('No offer received, request offer again', peer.id, peer)
 
 				signaling.requestOffer(peer.id, 'video')
 			}, 10000)
@@ -828,27 +836,27 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 
 			switch (peer.pc.iceConnectionState) {
 			case 'checking':
-				console.debug('Connecting to peer...', peer)
+				console.debug('Connecting to peer...', peer.id, peer)
 
 				break
 			case 'connected':
 			case 'completed': // on caller side
-				console.debug('Connection established.', peer)
+				console.debug('Connection established.', peer.id, peer)
 
 				handleIceConnectionStateConnected(peer)
 				break
 			case 'disconnected':
-				console.debug('Disconnected.', peer)
+				console.debug('Disconnected.', peer.id, peer)
 
 				handleIceConnectionStateDisconnected(peer)
 				break
 			case 'failed':
-				console.debug('Connection failed.', peer)
+				console.debug('Connection failed.', peer.id, peer)
 
 				handleIceConnectionStateFailed(peer)
 				break
 			case 'closed':
-				console.debug('Connection closed.', peer)
+				console.debug('Connection closed.', peer.id, peer)
 
 				break
 			}
@@ -897,16 +905,16 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 
 			switch (peer.pc.iceConnectionState) {
 			case 'checking':
-				console.debug('Connecting own peer...', peer)
+				console.debug('Connecting own peer...', peer.id, peer)
 
 				break
 			case 'connected':
 			case 'completed':
-				console.debug('Connection established (own peer).', peer)
+				console.debug('Connection established (own peer).', peer.id, peer)
 
 				break
 			case 'disconnected':
-				console.debug('Disconnected (own peer).', peer)
+				console.debug('Disconnected (own peer).', peer.id, peer)
 
 				setTimeout(function() {
 					if (peer.pc.iceConnectionState !== 'disconnected') {
@@ -917,11 +925,11 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 				}, 5000)
 				break
 			case 'failed':
-				console.debug('Connection failed (own peer).', peer)
+				console.debug('Connection failed (own peer).', peer.id, peer)
 
 				break
 			case 'closed':
-				console.debug('Connection closed (own peer).', peer)
+				console.debug('Connection closed (own peer).', peer.id, peer)
 
 				break
 			}
@@ -952,6 +960,41 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 	 */
 	function setHandlerForNegotiationNeeded(peer) {
 		peer.pc.addEventListener('negotiationneeded', function() {
+			// When the HPB is used and the negotiation is needed for a receiver
+			// peer (for example, to block the received video) there is no need
+			// to force a full reconnection, it is enough to reconnect only that
+			// peer.
+			if (signaling.hasFeature('mcu') && peer.id !== signaling.getSessionId()) {
+				// If possible update connection rather than creating a new one.
+				let update = signaling.hasFeature('update-sdp')
+
+				// Create a connection if the current one has failed, as it
+				// would require an ICE restart rather than update to recover.
+				if (update && (peer.pc.iceConnectionState === 'failed' || peer.pc.connectionState === 'failed')) {
+					update = false
+				}
+
+				// If the connection needs to be updated but a new connection
+				// (or another update) is already pending ignore the new update.
+				// If a new connection needs to be created rather than updated
+				// then force it even if there is another one already pending.
+				if (update && delayedConnectionToPeer[peer.id]) {
+					return
+				}
+
+				signaling.requestOffer(peer.id, 'video', update ? peer.sid : undefined)
+
+				clearInterval(delayedConnectionToPeer[peer.id])
+
+				delayedConnectionToPeer[peer.id] = setInterval(function() {
+					console.debug('No offer received, request offer again' + update ? '(update)' : '', peer.id, peer)
+
+					signaling.requestOffer(peer.id, 'video', update ? peer.sid : undefined)
+				}, 10000)
+
+				return
+			}
+
 			// Negotiation needed will be first triggered before the connection
 			// is established, but forcing a reconnection should be done only
 			// once the connection was established.
@@ -1136,7 +1179,7 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 	})
 
 	webrtc.on('createdPeer', function(peer) {
-		console.debug('Peer created', peer)
+		console.debug('Peer created', peer.id, peer)
 
 		if (peer.id !== signaling.getSessionId() && !peer.sharemyscreen) {
 			// In some strange cases a Peer can be added before its
@@ -1154,6 +1197,15 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 			} else {
 				callParticipantModel.setScreenPeer(peer)
 			}
+
+			// The SIP bridge publisher does not have data channels, so they
+			// need to be explicitly disabled in the subscriber. Otherwise it
+			// would try to open them, which would cause an endless loop of
+			// renegotiations, as after a negotiation the data channels will
+			// still not be opened, which will trigger a negotiation again.
+			if (callParticipantModel.get('internal')) {
+				peer.enableDataChannels = false
+			}
 		}
 
 		if (peer.type === 'video') {
@@ -1167,10 +1219,10 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 
 			setHandlerForNegotiationNeeded(peer)
 
-			// Make sure required data channels exist for all peers. This
-			// is required for peers that get created by SimpleWebRTC from
-			// received "Offer" messages. Otherwise the "channelMessage"
-			// will not be called.
+			// Make sure required data channels exist for all peers (that have
+			// not disabled them). This is required for peers that get created
+			// by SimpleWebRTC from received "Offer" messages. Otherwise the
+			// "channelMessage" will not be called.
 			peer.getDataChannel('status')
 		}
 	})
@@ -1543,10 +1595,10 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 			} else if (data.type === 'speaking' || data.type === 'stoppedSpeaking') {
 				// Valid known messages, but handled elsewhere
 			} else {
-				console.debug('Unknown message type %s from %s datachannel', data.type, label, data)
+				console.debug('Unknown message type %s from %s datachannel', data.type, label, data, peer.id, peer)
 			}
 		} else {
-			console.debug('Unknown message from %s datachannel', label, data)
+			console.debug('Unknown message from %s datachannel', label, data, peer.id, peer)
 		}
 	})
 
@@ -1630,7 +1682,7 @@ export default function initWebRtc(signaling, _callParticipantCollection, _local
 	})
 
 	// Local screen added.
-	webrtc.on('localScreenAdded', function(/* video */) {
+	webrtc.on('localScreenAdded', function() {
 		const currentSessionId = signaling.getSessionId()
 		for (const sessionId in usersInCallMapping) {
 			if (!Object.prototype.hasOwnProperty.call(usersInCallMapping, sessionId)) {

@@ -23,13 +23,16 @@ declare(strict_types=1);
 
 namespace OCA\Talk\Service;
 
+use OCA\Talk\Manager;
 use OCA\Circles\CirclesManager;
 use OCA\Circles\Model\Circle;
 use OCA\Circles\Model\Member;
+use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Config;
 use OCA\Talk\Events\AddParticipantsEvent;
 use OCA\Talk\Events\AttendeesAddedEvent;
 use OCA\Talk\Events\AttendeesRemovedEvent;
+use OCA\Talk\Events\ChatEvent;
 use OCA\Talk\Events\DuplicatedParticipantEvent;
 use OCA\Talk\Events\EndCallForEveryoneEvent;
 use OCA\Talk\Events\JoinRoomGuestEvent;
@@ -60,6 +63,7 @@ use OCP\Comments\IComment;
 use OCP\DB\Exception;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IGroup;
@@ -69,32 +73,20 @@ use OCP\IUserManager;
 use OCP\Security\ISecureRandom;
 
 class ParticipantService {
-	/** @var IConfig */
-	protected $serverConfig;
-	/** @var Config */
-	protected $talkConfig;
-	/** @var AttendeeMapper */
-	protected $attendeeMapper;
-	/** @var SessionMapper */
-	protected $sessionMapper;
-	/** @var SessionService */
-	protected $sessionService;
-	/** @var ISecureRandom */
-	private $secureRandom;
-	/** @var IDBConnection */
-	protected $connection;
-	/** @var IEventDispatcher */
-	private $dispatcher;
-	/** @var IUserManager */
-	private $userManager;
-	/** @var IGroupManager */
-	private $groupManager;
-	/** @var MembershipService */
-	private $membershipService;
-	/** @var Notifications */
-	private $notifications;
-	/** @var ITimeFactory */
-	private $timeFactory;
+	protected IConfig $serverConfig;
+	protected Config $talkConfig;
+	protected AttendeeMapper $attendeeMapper;
+	protected SessionMapper $sessionMapper;
+	protected SessionService $sessionService;
+	private ISecureRandom $secureRandom;
+	protected IDBConnection $connection;
+	private IEventDispatcher $dispatcher;
+	private IUserManager $userManager;
+	private IGroupManager $groupManager;
+	private MembershipService $membershipService;
+	private Notifications $notifications;
+	private ITimeFactory $timeFactory;
+	private ICacheFactory $cacheFactory;
 
 	public function __construct(IConfig $serverConfig,
 								Config $talkConfig,
@@ -108,7 +100,8 @@ class ParticipantService {
 								IGroupManager $groupManager,
 								MembershipService $membershipService,
 								Notifications $notifications,
-								ITimeFactory $timeFactory) {
+								ITimeFactory $timeFactory,
+								ICacheFactory $cacheFactory) {
 		$this->serverConfig = $serverConfig;
 		$this->talkConfig = $talkConfig;
 		$this->attendeeMapper = $attendeeMapper;
@@ -121,6 +114,7 @@ class ParticipantService {
 		$this->groupManager = $groupManager;
 		$this->membershipService = $membershipService;
 		$this->timeFactory = $timeFactory;
+		$this->cacheFactory = $cacheFactory;
 		$this->notifications = $notifications;
 	}
 
@@ -262,7 +256,7 @@ class ParticipantService {
 			$attendee = $this->attendeeMapper->findByActor($room->getId(), Attendee::ACTOR_USERS, $user->getUID());
 		} catch (DoesNotExistException $e) {
 			// queried here to avoid loop deps
-			$manager = \OC::$server->get(\OCA\Talk\Manager::class);
+			$manager = \OC::$server->get(Manager::class);
 			$isListableByUser = $manager->isRoomListableByUser($room, $user->getUID());
 
 			if (!$isListableByUser && !$event->getPassedPasswordProtection() && !$room->verifyPassword($password)['result']) {
@@ -368,7 +362,7 @@ class ParticipantService {
 		if (empty($participants)) {
 			return;
 		}
-		$event = new AddParticipantsEvent($room, $participants);
+		$event = new AddParticipantsEvent($room, $participants, true);
 		$this->dispatcher->dispatch(Room::EVENT_BEFORE_USERS_ADD, $event);
 
 		$lastMessage = 0;
@@ -427,7 +421,23 @@ class ParticipantService {
 			$this->dispatcher->dispatchTyped($attendeeEvent);
 
 			$this->dispatcher->dispatch(Room::EVENT_AFTER_USERS_ADD, $event);
+
+			$lastMessage = $event->getLastMessage();
+			if ($lastMessage instanceof IComment) {
+				$this->updateRoomLastMessage($room, $lastMessage);
+			}
 		}
+	}
+
+	protected function updateRoomLastMessage(Room $room, IComment $message): void {
+		$room->setLastMessage($message);
+		$lastMessageCache = $this->cacheFactory->createDistributed('talk/lastmsgid');
+		$lastMessageCache->remove($room->getToken());
+		$unreadCountCache = $this->cacheFactory->createDistributed('talk/unreadcount');
+		$unreadCountCache->clear($room->getId() . '-');
+
+		$event = new ChatEvent($room, $message);
+		$this->dispatcher->dispatch(ChatManager::EVENT_AFTER_MULTIPLE_SYSTEM_MESSAGE_SEND, $event);
 	}
 
 	public function getHighestPermissionAttendee(Room $room): ?Attendee {
@@ -913,14 +923,21 @@ class ParticipantService {
 
 		$participants = $this->getParticipantsInCall($room);
 		$changedSessionIds = [];
+		$changedUserIds = [];
 
 		// kick out all participants out of the call
 		foreach ($participants as $participant) {
 			$changedSessionIds[] = $participant->getSession()->getSessionId();
+			if ($participant->getAttendee()->getActorType() === Attendee::ACTOR_USERS) {
+				$changedUserIds[] = $participant->getAttendee()->getActorId();
+			}
 			$this->changeInCall($room, $participant, Participant::FLAG_DISCONNECTED, true);
 		}
 
+		$this->sessionMapper->resetInCallByIds($changedSessionIds);
+
 		$event->setSessionIds($changedSessionIds);
+		$event->setUserIds($changedUserIds);
 
 		$this->dispatcher->dispatch(Room::EVENT_AFTER_END_CALL_FOR_EVERYONE, $event);
 	}
@@ -952,7 +969,9 @@ class ParticipantService {
 		}
 
 		$session->setInCall($flags);
-		$this->sessionMapper->update($session);
+		if (!$endCallForEveryone) {
+			$this->sessionMapper->update($session);
+		}
 
 		if ($flags !== Participant::FLAG_DISCONNECTED) {
 			$attendee = $participant->getAttendee();
@@ -998,6 +1017,12 @@ class ParticipantService {
 		$this->dispatcher->dispatch(Room::EVENT_AFTER_SESSION_UPDATE_CALL_FLAGS, $event);
 	}
 
+	/**
+	 * @param Room $room
+	 * @param string[] $userIds
+	 * @param int $messageId
+	 * @param string[] $usersDirectlyMentioned
+	 */
 	public function markUsersAsMentioned(Room $room, array $userIds, int $messageId, array $usersDirectlyMentioned): void {
 		$update = $this->connection->getQueryBuilder();
 		$update->update('talk_attendees')

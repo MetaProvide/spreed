@@ -27,24 +27,24 @@ namespace OCA\Talk;
 
 use OCA\Talk\Chat\ChatManager;
 use OCP\Capabilities\IPublicCapability;
+use OCP\Comments\ICommentsManager;
 use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserSession;
 
 class Capabilities implements IPublicCapability {
-
-	/** @var IConfig */
-	protected $serverConfig;
-	/** @var Config */
-	protected $talkConfig;
-	/** @var IUserSession */
-	protected $userSession;
+	protected IConfig $serverConfig;
+	protected Config $talkConfig;
+	protected ICommentsManager $commentsManager;
+	protected IUserSession $userSession;
 
 	public function __construct(IConfig $serverConfig,
 								Config $talkConfig,
+								ICommentsManager $commentsManager,
 								IUserSession $userSession) {
 		$this->serverConfig = $serverConfig;
 		$this->talkConfig = $talkConfig;
+		$this->commentsManager = $commentsManager;
 		$this->userSession = $userSession;
 	}
 
@@ -78,6 +78,7 @@ class Capabilities implements IPublicCapability {
 				'read-only-rooms',
 				'listable-rooms',
 				'chat-read-marker',
+				'chat-unread',
 				'webinary-lobby',
 				'start-call-flag',
 				'chat-replies',
@@ -98,6 +99,8 @@ class Capabilities implements IPublicCapability {
 				'direct-mention-flag',
 				'notification-calls',
 				'conversation-permissions',
+				'rich-object-list-media',
+				'rich-object-delete',
 				'unified-search',
 			],
 			'config' => [
@@ -110,10 +113,17 @@ class Capabilities implements IPublicCapability {
 				],
 				'conversations' => [],
 				'previews' => [
-					'max-gif-size' => (int)$this->serverConfig->getAppValue('spreed', 'max-gif-size', '3145728')
+					'max-gif-size' => (int)$this->serverConfig->getAppValue('spreed', 'max-gif-size', '3145728'),
+				],
+				'signaling' => [
+					'session-ping-limit' => max(0, (int)$this->serverConfig->getAppValue('spreed', 'session-ping-limit', '200')),
 				],
 			],
 		];
+
+		if ($this->commentsManager->supportReactions()) {
+			$capabilities['features'][] = 'reactions';
+		}
 
 		if ($user instanceof IUser) {
 			$capabilities['config']['attachments']['folder'] = $this->talkConfig->getAttachmentFolder($user->getUID());

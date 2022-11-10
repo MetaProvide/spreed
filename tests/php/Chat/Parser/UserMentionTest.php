@@ -37,8 +37,9 @@ use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
+use Test\TestCase;
 
-class UserMentionTest extends \Test\TestCase {
+class UserMentionTest extends TestCase {
 
 	/** @var ICommentsManager|MockObject */
 	protected $commentsManager;
@@ -49,8 +50,7 @@ class UserMentionTest extends \Test\TestCase {
 	/** @var IL10N|MockObject */
 	protected $l;
 
-	/** @var UserMention */
-	protected $parser;
+	protected ?UserMention $parser = null;
 
 	public function setUp(): void {
 		parent::setUp();

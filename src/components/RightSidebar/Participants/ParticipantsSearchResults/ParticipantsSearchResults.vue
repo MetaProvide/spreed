@@ -20,46 +20,35 @@
 -->
 
 <template>
-	<div
-		class="participants-search-results"
+	<div class="participants-search-results"
 		:class="{'scrollable': scrollable }">
 		<template v-if="addableUsers.length !== 0">
-			<AppNavigationCaption
-				:title="t('spreed', 'Add users')" />
-			<ParticipantsList
-				:items="addableUsers"
+			<AppNavigationCaption :title="t('spreed', 'Add users')" />
+			<ParticipantsList :items="addableUsers"
 				@click="handleClickParticipant" />
 		</template>
 
 		<template v-if="addableGroups.length !== 0">
-			<AppNavigationCaption
-				:title="t('spreed', 'Add groups')" />
-			<ParticipantsList
-				:items="addableGroups"
+			<AppNavigationCaption :title="t('spreed', 'Add groups')" />
+			<ParticipantsList :items="addableGroups"
 				@click="handleClickParticipant" />
 		</template>
 
 		<template v-if="addableEmails.length !== 0">
-			<AppNavigationCaption
-				:title="t('spreed', 'Add emails')" />
-			<ParticipantsList
-				:items="addableEmails"
+			<AppNavigationCaption :title="t('spreed', 'Add emails')" />
+			<ParticipantsList :items="addableEmails"
 				@click="handleClickParticipant" />
 		</template>
 
 		<template v-if="addableCircles.length !== 0">
-			<AppNavigationCaption
-				:title="t('spreed', 'Add circles')" />
-			<ParticipantsList
-				:items="addableCircles"
+			<AppNavigationCaption :title="t('spreed', 'Add circles')" />
+			<ParticipantsList :items="addableCircles"
 				@click="handleClickParticipant" />
 		</template>
 
 		<template v-if="addableRemotes.length !== 0">
-			<AppNavigationCaption
-				:title="t('spreed', 'Add federated users')" />
-			<ParticipantsList
-				:items="addableRemotes"
+			<AppNavigationCaption :title="t('spreed', 'Add federated users')" />
+			<ParticipantsList :items="addableRemotes"
 				@click="handleClickParticipant" />
 		</template>
 		<AppNavigationCaption v-if="sourcesWithoutResults"
@@ -78,8 +67,7 @@
 				to display the results of a search. Upon clicking on it, an event is
 				emitted to the parent component in order to be able to focus on it's
 				input field -->
-			<div
-				v-if="displaySearchHint && !noResults"
+			<div v-if="displaySearchHint && !noResults"
 				class="participants-search-results__hint"
 				@click="handleClickHint">
 				<div class="icon-contacts-dark set-contacts__icon" />

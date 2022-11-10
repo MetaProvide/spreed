@@ -25,16 +25,17 @@
 	<file-preview v-bind="filePreview"
 		:tabindex="wrapperTabIndex"
 		class="file-preview"
-		:class="{ 'file-preview--viewer-available': isViewerAvailable, 'file-preview--upload-editor': isUploadEditor }"
+		:class="{ 'file-preview--viewer-available': isViewerAvailable,
+			'file-preview--upload-editor': isUploadEditor,
+			'file-preview--shared-items-grid': isSharedItemsTab && !rowLayout,
+			'file-preview--row-layout': rowLayout }"
 		@click.exact="handleClick"
 		@keydown.enter="handleClick">
-		<div
-			v-if="!isLoading"
+		<div v-if="!isLoading"
 			class="image-container"
 			:class="{'playable': isPlayable}">
 			<span v-if="isPlayable && !smallPreview" class="play-video-button">
-				<PlayCircleOutline
-					:size="48"
+				<PlayCircleOutline :size="48"
 					decorative
 					fill-color="#ffffff"
 					title="" />
@@ -53,19 +54,20 @@
 		<span v-if="isLoading"
 			v-tooltip="previewTooltip"
 			class="preview loading" />
-		<button v-if="isUploadEditor"
+		<Button v-if="isUploadEditor"
+			class="remove-file"
 			tabindex="1"
+			type="primary"
 			:aria-label="removeAriaLabel"
-			class="remove-file primary">
-			<Close
-				class="remove-file__icon"
-				decorative
-				title=""
-				@click="$emit('remove-file', id)" />
-		</button>
+			@click="$emit('remove-file', id)">
+			<template #icon>
+				<Close decorative
+					title="" />
+			</template>
+		</Button>
 		<ProgressBar v-if="isTemporaryUpload && !isUploadEditor" :value="uploadProgress" />
-		<div class="name-container">
-			<strong v-if="shouldShowFileDetail">{{ fileDetail }}</strong>
+		<div v-if="shouldShowFileDetail" class="name-container">
+			{{ fileDetail }}
 		</div>
 	</file-preview>
 </template>
@@ -79,6 +81,7 @@ import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline'
 import { getCapabilities } from '@nextcloud/capabilities'
 import { encodePath } from '@nextcloud/paths'
 import AudioPlayer from './AudioPlayer'
+import Button from '@nextcloud/vue/dist/Components/Button'
 
 const PREVIEW_TYPE = {
 	TEMPORARY: 0,
@@ -94,6 +97,7 @@ export default {
 		ProgressBar,
 		Close,
 		PlayCircleOutline,
+		Button,
 	},
 
 	directives: {
@@ -202,6 +206,16 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
+		rowLayout: {
+			type: Boolean,
+			default: false,
+		},
+
+		isSharedItemsTab: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	data() {
 		return {
@@ -211,6 +225,9 @@ export default {
 	},
 	computed: {
 		shouldShowFileDetail() {
+			if (this.isSharedItemsTab && !this.rowLayout) {
+				return false
+			}
 			// display the file detail below the preview if the preview
 			// is not easily recognizable, when:
 			return (
@@ -278,7 +295,7 @@ export default {
 				classes += 'preview '
 			}
 
-			if (this.failed || this.previewType === PREVIEW_TYPE.MIME_ICON) {
+			if (this.failed || this.previewType === PREVIEW_TYPE.MIME_ICON || this.rowLayout) {
 				classes += 'mimeicon'
 			}
 			return classes
@@ -306,7 +323,7 @@ export default {
 			if (this.previewType === PREVIEW_TYPE.TEMPORARY) {
 				return this.localUrl
 			}
-			if (this.previewType === PREVIEW_TYPE.MIME_ICON) {
+			if (this.previewType === PREVIEW_TYPE.MIME_ICON || this.rowLayout) {
 				return OC.MimeType.getIconUrl(this.mimetype)
 			}
 			// whether to embed/render the file directly
@@ -330,7 +347,7 @@ export default {
 			if (userId === null) {
 				// guest mode: grab token from the link URL
 				// FIXME: use a cleaner way...
-				const token = this.link.substr(this.link.lastIndexOf('/') + 1)
+				const token = this.link.slice(this.link.lastIndexOf('/') + 1)
 				return generateUrl('/apps/files_sharing/publicpreview/{token}?x=-1&y={height}&a=1', {
 					token,
 					height: previewSize,
@@ -468,10 +485,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../../../../assets/variables.scss';
+@import '../../../../../assets/variables';
 
 .file-preview {
 	position: relative;
+	min-width: 0;
 	width: 100%;
 	/* The file preview can not be a block; otherwise it would fill the whole
 	width of the container and the loading icon would not be centered on the
@@ -480,12 +498,10 @@ export default {
 
 	border-radius: 16px;
 
+	box-sizing: content-box !important;
 	&:hover,
 	&:focus {
 		background-color: var(--color-background-hover);
-		/* Trick to keep the same position while adding a padding to show
-			* the background. */
-		box-sizing: content-box !important;
 		.remove-file {
 			visibility: visible;
 		}
@@ -523,8 +539,8 @@ export default {
 	}
 
 	.image-container {
-		display: inline-block;
-		position: relative;
+		display: flex;
+		height: 100%;
 
 		&.playable {
 			.preview {
@@ -555,19 +571,11 @@ export default {
 	}
 
 	.name-container {
-		/* Ellipsis with 100% width */
-		display: table;
-		table-layout: fixed;
+		font-weight: bold;
 		width: 100%;
-
-		strong {
-			/* As the file preview is an inline block the name is set as a block to
-			force it to be on its own line below the preview. */
-			display: block;
-			overflow: hidden;
-			white-space: nowrap;
-			text-overflow: ellipsis;
-		}
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 	}
 
 	&:not(.file-preview--viewer-available) {
@@ -576,10 +584,11 @@ export default {
 		}
 	}
 	&--upload-editor {
-		max-width: 160px;
-		max-height: 160px;
+		max-width: 140px;
+		max-height: 140px;
+		padding: 12px 12px 24px 12px;
 		margin: 10px;
-		padding: 12px;
+
 		.preview {
 			margin: auto;
 			width: 128px;
@@ -589,6 +598,36 @@ export default {
 			width: 100%;
 		}
 	}
+
+	&--row-layout {
+		display: flex;
+		align-items: center;
+		height: 36px;
+		border-radius: var(--border-radius);
+		padding: 2px 4px;
+
+		.image-container {
+			height: 100%;
+		}
+
+		.name-container {
+			padding: 0 4px;
+		}
+
+		.loading {
+			width: 36px;
+			height: 36px;
+		}
+	}
+
+	&--shared-items-grid {
+		aspect-ratio: 1;
+		.preview {
+			width: 100%;
+			min-height: unset;
+			height: 100%;
+		}
+	}
 }
 
 .remove-file {
@@ -596,14 +635,6 @@ export default {
 	position: absolute;
 	top: 8px;
 	right: 8px;
-	box-shadow: 0 0 4px var(--color-box-shadow);
-	width: $clickable-area;
-	height: $clickable-area;
-	padding: 0;
-	margin: 0;
-	&__icon {
-		color: var(--color-primary-text);
-	}
 }
 
 </style>

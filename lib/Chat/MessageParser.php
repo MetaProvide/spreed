@@ -43,14 +43,11 @@ use OCP\IUserManager;
 class MessageParser {
 	public const EVENT_MESSAGE_PARSE = self::class . '::parseMessage';
 
-	/** @var IEventDispatcher */
-	private $dispatcher;
+	private IEventDispatcher $dispatcher;
 
-	/** @var IUserManager */
-	private $userManager;
+	private IUserManager $userManager;
 
-	/** @var array */
-	protected $guestNames = [];
+	protected array $guestNames = [];
 
 	public function __construct(IEventDispatcher $dispatcher,
 								IUserManager $userManager) {
@@ -66,8 +63,8 @@ class MessageParser {
 		$message->setMessage($message->getComment()->getMessage(), []);
 
 		$verb = $message->getComment()->getVerb();
-		if ($verb === 'object_shared') {
-			$verb = 'system';
+		if ($verb === ChatManager::VERB_OBJECT_SHARED) {
+			$verb = ChatManager::VERB_SYSTEM;
 		}
 		$message->setMessageType($verb);
 		$this->setActor($message);

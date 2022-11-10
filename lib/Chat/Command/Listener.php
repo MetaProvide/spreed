@@ -31,11 +31,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 
 class Listener {
-
-	/** @var CommandService */
-	protected $commandService;
-	/** @var Executor */
-	protected $executor;
+	protected CommandService $commandService;
+	protected Executor $executor;
 
 	public function __construct(CommandService $commandService,
 								Executor $executor) {
@@ -49,7 +46,7 @@ class Listener {
 			$participant = $event->getParticipant();
 
 			/** @var self $listener */
-			$listener = \OC::$server->query(self::class);
+			$listener = \OC::$server->get(self::class);
 
 			if (strpos($message->getMessage(), '//') === 0) {
 				return;
@@ -91,11 +88,11 @@ class Listener {
 		}
 
 		try {
-			return [$this->commandService->find('',  $app), trim($cmd . ' ' . $arguments)];
+			return [$this->commandService->find('', $app), trim($cmd . ' ' . $arguments)];
 		} catch (DoesNotExistException $e) {
 		}
 
-		return [$this->commandService->find('',  'help'), trim($message)];
+		return [$this->commandService->find('', 'help'), trim($message)];
 	}
 
 	protected function matchesCommand(string $message): array {

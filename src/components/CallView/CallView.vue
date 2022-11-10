@@ -21,20 +21,17 @@
 
 <template>
 	<div id="call-container">
-		<EmptyCallView
-			v-if="!remoteParticipantsCount && !screenSharingActive && !isGrid"
+		<EmptyCallView v-if="!remoteParticipantsCount && !screenSharingActive && !isGrid"
 			:is-sidebar="isSidebar" />
 		<div id="videos">
-			<template
-				v-if="!isGrid">
-				<!-- Selected override mode -->
-				<div v-if="showSelected"
+			<template v-if="!isGrid">
+				<!-- Selected video override mode -->
+				<div v-if="showSelectedVideo"
 					ref="videoContainer"
 					class="video__promoted selected-video"
 					:class="{'full-page': isOneToOne}">
 					<template v-for="callParticipantModel in reversedCallParticipantModels">
-						<Video
-							v-if="callParticipantModel.attributes.peerId === selectedVideoPeerId"
+						<Video v-if="callParticipantModel.attributes.peerId === selectedVideoPeerId"
 							:key="callParticipantModel.attributes.selectedVideoPeerId"
 							:token="token"
 							:model="callParticipantModel"
@@ -46,21 +43,17 @@
 					</template>
 				</div>
 				<!-- Screens -->
-				<div v-else-if="showLocalScreen || showRemoteScreen" id="screens">
+				<div v-else-if="showLocalScreen || showRemoteScreen || showSelectedScreen" id="screens">
 					<!-- local screen -->
-					<Screen
-						v-if="showLocalScreen"
+					<Screen v-if="showLocalScreen"
 						:token="token"
 						:local-media-model="localMediaModel"
 						:shared-data="localSharedData"
 						:is-big="true" />
 					<!-- remote screen -->
-					<template
-						v-else>
-						<template
-							v-for="callParticipantModel in reversedCallParticipantModels">
-							<Screen
-								v-if="callParticipantModel.attributes.peerId === shownRemoteScreenPeerId"
+					<template v-else>
+						<template v-for="callParticipantModel in reversedCallParticipantModels">
+							<Screen v-if="callParticipantModel.attributes.peerId === shownRemoteScreenPeerId"
 								:key="'screen-' + callParticipantModel.attributes.peerId"
 								:token="token"
 								:call-participant-model="callParticipantModel"
@@ -74,8 +67,7 @@
 					ref="videoContainer"
 					class="video__promoted selected-video--local"
 					:class="{'full-page': isOneToOne}">
-					<LocalVideo
-						ref="localVideo"
+					<LocalVideo ref="localVideo"
 						:fit-video="true"
 						:is-stripe="false"
 						:show-controls="false"
@@ -92,8 +84,7 @@
 					class="video__promoted autopilot"
 					:class="{'full-page': isOneToOne}">
 					<template v-for="callParticipantModel in reversedCallParticipantModels">
-						<Video
-							v-if="sharedDatas[callParticipantModel.attributes.peerId].promoted"
+						<Video v-if="sharedDatas[callParticipantModel.attributes.peerId].promoted"
 							:key="callParticipantModel.attributes.peerId"
 							:token="token"
 							:model="callParticipantModel"
@@ -109,8 +100,7 @@
 			</template>
 
 			<!-- Stripe or fullscreen grid depending on `isGrid` -->
-			<Grid
-				v-if="!isSidebar"
+			<Grid v-if="!isSidebar"
 				v-bind="$attrs"
 				:is-stripe="!isGrid"
 				:token="token"
@@ -129,8 +119,7 @@
 				@select-video="handleSelectVideo"
 				@click-local-video="handleClickLocalVideo" />
 			<!-- Local video if sidebar -->
-			<LocalVideo
-				v-if="isSidebar && !showLocalVideo"
+			<LocalVideo v-if="isSidebar && !showLocalVideo"
 				ref="localVideo"
 				class="local-video"
 				:class="{ 'local-video--sidebar': isSidebar }"
@@ -152,6 +141,7 @@ import { loadState } from '@nextcloud/initial-state'
 import Grid from './Grid/Grid'
 import { SIMULCAST } from '../../constants'
 import { localMediaModel, localCallParticipantModel, callParticipantCollection } from '../../utils/webrtc/index'
+import RemoteVideoBlocker from '../../utils/webrtc/RemoteVideoBlocker'
 import { fetchPeers } from '../../services/callsService'
 import { showMessage } from '@nextcloud/dialogs'
 import EmptyCallView from './shared/EmptyCallView'
@@ -223,7 +213,7 @@ export default {
 		callParticipantModelsWithVideo() {
 			return this.callParticipantModels.filter(callParticipantModel => {
 				return callParticipantModel.attributes.videoAvailable
-					&& this.sharedDatas[callParticipantModel.attributes.peerId].videoEnabled
+					&& this.sharedDatas[callParticipantModel.attributes.peerId].remoteVideoBlocker.isVideoEnabled()
 					&& (typeof callParticipantModel.attributes.stream === 'object')
 			})
 		},
@@ -294,8 +284,12 @@ export default {
 		// of the promoted view
 
 		// Show selected video (other than local)
-		showSelected() {
+		showSelectedVideo() {
 			return this.hasSelectedVideo && !this.showLocalVideo
+		},
+
+		showSelectedScreen() {
+			return this.hasSelectedScreen && !this.showLocalVideo
 		},
 
 		// Shows the local video if selected
@@ -308,9 +302,10 @@ export default {
 			return this.hasLocalScreen && this.selectedVideoPeerId === null && this.screens[0] === localCallParticipantModel.attributes.peerId
 		},
 
-		// Show somebody else's screen
+		// Show somebody else's screen. This will show the screen of the last
+		// person that shared it.
 		showRemoteScreen() {
-			return this.shownRemoteScreenPeerId !== null
+			return this.shownRemoteScreenPeerId !== null && !this.showSelectedVideo && !this.showSelectedScreen
 		},
 
 		shownRemoteScreenPeerId() {
@@ -388,6 +383,17 @@ export default {
 			}
 		},
 
+		showSelectedVideo(newVal) {
+			if (newVal) {
+				this.$store.dispatch('setCallViewMode', { isGrid: false })
+			}
+		},
+
+		showSelectedScreen(newVal) {
+			if (newVal) {
+				this.$store.dispatch('setCallViewMode', { isGrid: false })
+			}
+		},
 	},
 	created() {
 		// Ensure that data is properly initialized before mounting the
@@ -399,7 +405,6 @@ export default {
 
 		callParticipantCollection.on('remove', this._lowerHandWhenParticipantLeaves)
 
-		subscribe('talk:video:toggled', this.handleToggleVideo)
 		subscribe('switch-screen-to-id', this._switchScreenToId)
 	},
 	beforeDestroy() {
@@ -407,19 +412,13 @@ export default {
 
 		callParticipantCollection.off('remove', this._lowerHandWhenParticipantLeaves)
 
-		unsubscribe('talk:video:toggled', this.handleToggleVideo)
 		unsubscribe('switch-screen-to-id', this._switchScreenToId)
 	},
 	methods: {
 		/**
-		 * Updates data properties that depend on the CallParticipantModels.
+		 *		 Updates data properties that depend on the CallParticipantModels.		 *		 * The data contains some properties that can not be dynamically		 * computed but that depend on the current CallParticipantModels, so		 * this function adds and removes elements and watchers as needed based		 * on the given CallParticipantModels.		 *		 * @param {Array} models the array of CallParticipantModels
 		 *
-		 * The data contains some properties that can not be dynamically
-		 * computed but that depend on the current CallParticipantModels, so
-		 * this function adds and removes elements and watchers as needed based
-		 * on the given CallParticipantModels.
-		 *
-		 * @param {Array} models the array of CallParticipantModels
+		 * @param models
 		 */
 		updateDataFromCallParticipantModels(models) {
 			const addedModels = models.filter(model => !this.sharedDatas[model.attributes.peerId])
@@ -449,7 +448,7 @@ export default {
 			addedModels.forEach(addedModel => {
 				const sharedData = {
 					promoted: false,
-					videoEnabled: true,
+					remoteVideoBlocker: new RemoteVideoBlocker(addedModel),
 					screenVisible: false,
 				}
 
@@ -641,11 +640,6 @@ export default {
 			}
 		}, 1500),
 
-		// Toggles videos on and off
-		handleToggleVideo({ peerId, value }) {
-			this.sharedDatas[peerId].videoEnabled = value
-		},
-
 		adjustSimulcastQuality() {
 			this.callParticipantModels.forEach(callParticipantModel => {
 				this.adjustSimulcastQualityForParticipant(callParticipantModel)
@@ -666,7 +660,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/variables.scss';
+@import '../../assets/variables';
 
 .call-view {
 	width: 100%;

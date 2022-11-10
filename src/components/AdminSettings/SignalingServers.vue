@@ -39,8 +39,7 @@
 			<span v-if="!servers.length">{{ t('spreed', 'Please note that calls with more than 4 participants without external signaling server, participants can experience connectivity issues and cause high load on participating devices.') }}</span>
 		</p>
 
-		<p
-			v-if="!isCacheConfigured"
+		<p v-if="!isCacheConfigured"
 			class="settings-hint warning">
 			{{ t('spreed', 'It is highly recommended to set up a distributed cache when using Nextcloud Talk together with a High Performance Back-end.') }}
 		</p>
@@ -58,8 +57,7 @@
 
 		<ul class="turn-servers">
 			<transition-group name="fade" tag="li">
-				<SignalingServer
-					v-for="(server, index) in servers"
+				<SignalingServer v-for="(server, index) in servers"
 					:key="`server${index}`"
 					:server.sync="servers[index].server"
 					:verify.sync="servers[index].verify"

@@ -24,9 +24,9 @@
 		target="_blank"
 		rel="noopener noreferrer"
 		class="location"
+		:class="{ 'wide': wide}"
 		:aria-label="linkAriaLabel">
-		<LMap
-			:zoom="previewZoom"
+		<LMap :zoom="previewZoom"
 			:center="center"
 			:options="{
 				scrollWheelZoom: false,
@@ -36,15 +36,13 @@
 			}"
 			@scroll.prevent="">
 			<LTileLayer :url="url" />
-			<LControlAttribution
-				position="bottomright"
+			<LControlAttribution position="bottomright"
 				:prefix="attribution" />
 			<LMarker :lat-lng="center">
-				<LTooltip
-					:options="{
-						direction: 'top',
-						permanent: 'true',
-						offset: [-16,-14]}">
+				<LTooltip :options="{
+					direction: 'top',
+					permanent: 'true',
+					offset: [-16,-14]}">
 					{{ name }}
 				</LTooltip>
 			</LMarker>
@@ -77,7 +75,7 @@ export default {
 		 * The latitude of the location
 		 */
 		latitude: {
-			type: String,
+			type: Number,
 			required: true,
 		},
 
@@ -85,7 +83,7 @@ export default {
 		 * The longitude of the location
 		 */
 		longitude: {
-			type: String,
+			type: Number,
 			required: true,
 		},
 
@@ -95,6 +93,11 @@ export default {
 		name: {
 			type: String,
 			default: '',
+		},
+
+		wide: {
+			type: Boolean,
+			default: false,
 		},
 	},
 
@@ -139,5 +142,11 @@ export default {
 	height: 300px;
 	max-height: 30vh;
 	margin: 4px;
+
+	&.wide {
+		width: 100%;
+		height: 100%;
+		margin: 0;
+	}
 }
 </style>

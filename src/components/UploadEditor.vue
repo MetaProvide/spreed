@@ -21,55 +21,55 @@
 
 <template>
 	<Modal v-if="showModal"
+		:size="isVoiceMessage ? 'small' : 'normal'"
 		class="upload-editor"
 		:container="container"
 		@close="handleDismiss">
-		<template v-if="!isVoiceMessage">
-			<!--native file picker, hidden -->
-			<input id="file-upload"
-				ref="fileUploadInput"
-				multiple
-				type="file"
-				class="hidden-visually"
-				@change="handleFileInput">
-			<transition-group
-				class="upload-editor__previews"
-				name="fade"
-				tag="div">
-				<template v-for="file in files">
-					<FilePreview
-						:key="file.temporaryMessage.id"
-						v-bind="file.temporaryMessage.messageParameters.file"
-						:is-upload-editor="true"
-						@remove-file="handleRemoveFileFromSelection" />
-				</template>
-				<div
-					:key="'addMore'"
-					class="add-more">
-					<button :aria-label="addMoreAriaLabel"
-						class="add-more__button primary"
-						@click="clickImportInput">
-						<Plus
-							decorative
-							title=""
-							:size="48"
-							class="upload-editor__plus-icon" />
-					</button>
-				</div>
-			</transition-group>
-		</template>
-		<template v-else>
-			<AudioPlayer
-				:name="voiceMessageName"
-				:local-url="voiceMessageLocalURL" />
-		</template>
-		<div class="upload-editor__actions">
-			<button @click="handleDismiss">
-				{{ t('spreed', 'Dismiss') }}
-			</button>
-			<button ref="submitButton" class="primary" @click="handleUpload">
-				{{ t('spreed', 'Send') }}
-			</button>
+		<div class="upload-editor">
+			<template v-if="!isVoiceMessage">
+				<!--native file picker, hidden -->
+				<input id="file-upload"
+					ref="fileUploadInput"
+					multiple
+					type="file"
+					class="hidden-visually"
+					@change="handleFileInput">
+				<transition-group class="upload-editor__previews"
+					name="fade"
+					tag="div">
+					<template v-for="file in files">
+						<FilePreview :key="file.temporaryMessage.id"
+							v-bind="file.temporaryMessage.messageParameters.file"
+							:is-upload-editor="true"
+							@remove-file="handleRemoveFileFromSelection" />
+					</template>
+					<div :key="'addMore'"
+						class="add-more">
+						<Button :aria-label="addMoreAriaLabel"
+							type="primary"
+							class="add-more__button"
+							@click="clickImportInput">
+							<template #icon>
+								<Plus decorative
+									title=""
+									:size="48" />
+							</template>
+						</Button>
+					</div>
+				</transition-group>
+			</template>
+			<template v-else>
+				<AudioPlayer :name="voiceMessageName"
+					:local-url="voiceMessageLocalURL" />
+			</template>
+			<div class="upload-editor__actions">
+				<Button type="tertiary" @click="handleDismiss">
+					{{ t('spreed', 'Dismiss') }}
+				</Button>
+				<Button ref="submitButton" type="primary" @click="handleUpload">
+					{{ t('spreed', 'Send') }}
+				</Button>
+			</div>
 		</div>
 	</Modal>
 </template>
@@ -80,6 +80,7 @@ import Modal from '@nextcloud/vue/dist/Components/Modal'
 import FilePreview from './MessagesList/MessagesGroup/Message/MessagePart/FilePreview.vue'
 import Plus from 'vue-material-design-icons/Plus'
 import AudioPlayer from './MessagesList/MessagesGroup/Message/MessagePart/AudioPlayer.vue'
+import Button from '@nextcloud/vue/dist/Components/Button'
 
 export default {
 	name: 'UploadEditor',
@@ -89,6 +90,7 @@ export default {
 		FilePreview,
 		Plus,
 		AudioPlayer,
+		Button,
 	},
 
 	computed: {
@@ -190,15 +192,22 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../assets/variables.scss';
+@import '../assets/variables';
 
 .upload-editor {
+	height: 100%;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: 16px;
+
 	&__previews {
 		overflow-x: hidden !important;
-		display: grid;
+		display: flex;
 		position: relative;
 		overflow: auto;
-		grid-template-columns: repeat(4, auto);
+		flex-wrap: wrap;
 	}
 	&__actions {
 		display: flex;
@@ -217,26 +226,8 @@ export default {
 	display: flex;
 	margin: 10px;
 	&__button {
-		width: 80px;
-		height: 80px;
-		border: none;
-		border-radius: var(--border-radius-pill);
-		position: relative;
-		z-index: 2;
-		box-shadow: 0 0 4px var(--color-box-shadow);
-		padding: 0;
 		margin: auto;
-		&__plus {
-			color: var(--color-primary-text);
-			z-index: 3;
-		}
 	}
 }
 
-::v-deep .modal-container {
-	display: flex !important;
-	flex-direction: column;
-	padding: 12px !important;
-	min-width: 400px;
-}
 </style>

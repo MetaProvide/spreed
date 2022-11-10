@@ -33,23 +33,18 @@ use OCP\Collaboration\Collaborators\SearchResultType;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Share\IShare;
+use Test\TestCase;
 
-class RoomPluginTest extends \Test\TestCase {
+class RoomPluginTest extends TestCase {
+	protected ?Manager $manager = null;
 
-	/** @var Manager */
-	protected $manager;
+	protected ?IUserSession $userSession = null;
 
-	/** @var IUserSession */
-	protected $userSession;
+	protected ?IUser $user = null;
 
-	/** @var IUser */
-	protected $user;
+	protected ?ISearchResult $searchResult = null;
 
-	/** @var ISearchResult */
-	protected $searchResult;
-
-	/** @var RoomPlugin */
-	protected $plugin;
+	protected ?RoomPlugin $plugin = null;
 
 	public function setUp(): void {
 		parent::setUp();

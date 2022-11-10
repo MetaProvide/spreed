@@ -31,6 +31,7 @@ function Peer(options) {
 	this.oneway = options.oneway || false
 	this.sharemyscreen = options.sharemyscreen || false
 	this.stream = options.stream
+	this.receiverOnly = options.receiverOnly
 	this.sendVideoIfAvailable = options.sendVideoIfAvailable === undefined ? true : options.sendVideoIfAvailable
 	this.enableDataChannels = options.enableDataChannels === undefined ? this.parent.config.enableDataChannels : options.enableDataChannels
 	this.enableSimulcast = options.enableSimulcast === undefined ? this.parent.config.enableSimulcast : options.enableSimulcast
@@ -418,10 +419,65 @@ Peer.prototype.offer = function(options) {
 
 Peer.prototype.handleOffer = function(offer) {
 	this.pc.setRemoteDescription(offer).then(function() {
+		this._blockRemoteVideoIfNeeded()
+
 		this.answer()
 	}.bind(this)).catch(function(error) {
 		console.warn('setRemoteDescription for offer failed: ', error)
 	})
+}
+
+Peer.prototype._getTransceiverKind = function(transceiver) {
+	// Transceivers for HPB subscribers have the transceiver kind in its mid.
+	if (transceiver.mid === 'audio' || transceiver.mid === 'video') {
+		return transceiver.mid
+	}
+
+	// In general, the transceiver kind can be got from the receiver track, as
+	// it will always be there, even if the transceiver is inactive or the
+	// remote sender never had a track.
+	if (transceiver.receiver && transceiver.receiver.track) {
+		return transceiver.receiver.track.kind
+	}
+
+	console.debug('Transceiver kind could not be determined: ', transceiver)
+
+	return null
+}
+
+/**
+ * Blocks remote video based on "_remoteVideoShouldBeBlocked".
+ *
+ * 'remoteVideoBlocked' is emitted if the blocked state changes.
+ *
+ * Currently remote video can be blocked only when the HPB is used, so this
+ * method should be called immediately before creating the answer (the answer
+ * must be created in the same "tick" that this method is called).
+ *
+ * Note that if the transceiver direction changes after creating the answer but
+ * before setting it as the local description the "negotiationneeded" event will
+ * be automatically emitted again.
+ */
+Peer.prototype._blockRemoteVideoIfNeeded = function() {
+	const remoteVideoWasBlocked = this._remoteVideoBlocked
+
+	this._remoteVideoBlocked = undefined
+
+	this.pc.getTransceivers().forEach(transceiver => {
+		if (transceiver.mid === 'video' && !transceiver.stopped) {
+			if (this._remoteVideoShouldBeBlocked) {
+				transceiver.direction = 'inactive'
+
+				this._remoteVideoBlocked = true
+			} else {
+				this._remoteVideoBlocked = false
+			}
+		}
+	})
+
+	if (remoteVideoWasBlocked !== this._remoteVideoBlocked) {
+		this.emit('remoteVideoBlocked', this._remoteVideoBlocked)
+	}
 }
 
 Peer.prototype.answer = function() {
@@ -454,11 +510,10 @@ Peer.prototype.handleAnswer = function(answer) {
 
 Peer.prototype.selectSimulcastStream = function(substream, temporal) {
 	if (this.substream === substream && this.temporal === temporal) {
-		console.debug('Simulcast stream not changed', this, substream, temporal)
 		return
 	}
 
-	console.debug('Changing simulcast stream', this, substream, temporal)
+	console.debug('Changing simulcast stream', this.id, this, substream, temporal)
 	this.send('selectStream', {
 		substream,
 		temporal,
@@ -523,6 +578,9 @@ Peer.prototype.sendDirectly = function(channel, messageType, payload) {
 	}
 	this.logger.log('sending via datachannel', channel, messageType, message)
 	const dc = this.getDataChannel(channel)
+	if (!dc) {
+		return false
+	}
 	if (dc.readyState !== 'open') {
 		if (!Object.prototype.hasOwnProperty.call(this.pendingDCMessages, channel)) {
 			this.pendingDCMessages[channel] = []
@@ -559,6 +617,9 @@ Peer.prototype._observeDataChannel = function(channel) {
 Peer.prototype.getDataChannel = function(name, opts) {
 	if (!webrtcSupport.supportDataChannel) {
 		return this.emit('error', new Error('createDataChannel not supported'))
+	}
+	if (!this.enableDataChannels) {
+		return null
 	}
 	let channel = this.channels[name]
 	opts || (opts = {})
@@ -597,9 +658,7 @@ Peer.prototype.start = function() {
 	// a) create a datachannel a priori
 	// b) do a renegotiation later to add the SCTP m-line
 	// Let's do (a) first...
-	if (this.enableDataChannels) {
-		this.getDataChannel('simplewebrtc')
-	}
+	this.getDataChannel('simplewebrtc')
 
 	this.offer(this.receiveMedia)
 }
@@ -739,7 +798,7 @@ Peer.prototype._replaceTrack = async function(newTrack, oldTrack, stream) {
 		} else if (!sender.kind) {
 			this.pc.getTransceivers().forEach(transceiver => {
 				if (transceiver.sender === sender) {
-					sender.kind = transceiver.mid
+					sender.kind = this._getTransceiverKind(transceiver)
 				}
 			})
 		}
@@ -814,6 +873,36 @@ Peer.prototype.handleSentTrackEnabledChanged = function(track, stream) {
 	} else if (!track.enabled && sender) {
 		this.handleSentTrackReplacedBound(track, track, stream)
 	}
+}
+
+Peer.prototype.setRemoteVideoBlocked = function(remoteVideoBlocked) {
+	// If the HPB is not used or if it is used and this is a sender peer the
+	// remote video can not be blocked.
+	// Besides that the remote video is not blocked either if the signaling
+	// server does not support updating the subscribers; in that case a new
+	// connection would need to be established and due to this the audio would
+	// be interrupted during the connection change.
+	if (!this.receiverOnly || !this.parent.config.connection.hasFeature('update-sdp')) {
+		return
+	}
+
+	this._remoteVideoShouldBeBlocked = remoteVideoBlocked
+
+	// The "negotiationneeded" event is emitted if needed based on the direction
+	// changes.
+	// Note that there will be a video transceiver even if the remote
+	// participant is sending a null video track (either because there is a
+	// camera but the video is disabled or because the camera was removed during
+	// the call), so a renegotiation could be needed also in that case.
+	this.pc.getTransceivers().forEach(transceiver => {
+		if (transceiver.mid === 'video' && !transceiver.stopped) {
+			if (remoteVideoBlocked) {
+				transceiver.direction = 'inactive'
+			} else {
+				transceiver.direction = 'recvonly'
+			}
+		}
+	})
 }
 
 Peer.prototype.handleRemoteStreamAdded = function(event) {

@@ -31,6 +31,7 @@ use OCA\Talk\Exceptions\UnauthorizedException;
 use OCA\Talk\Manager as RoomManager;
 use OCA\Talk\Model\Attendee;
 use OCA\Talk\Room;
+use OCA\Talk\Webinary;
 use OCP\Comments\IComment;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -41,17 +42,11 @@ use OCP\Search\SearchResult;
 use OCP\Search\SearchResultEntry;
 
 class MessageSearch implements IProvider {
-
-	/** @var RoomManager */
-	protected $roomManager;
-	/** @var ChatManager */
-	protected $chatManager;
-	/** @var MessageParser */
-	protected $messageParser;
-	/** @var IURLGenerator */
-	protected $url;
-	/** @var IL10N */
-	protected $l;
+	protected RoomManager $roomManager;
+	protected ChatManager $chatManager;
+	protected MessageParser $messageParser;
+	protected IURLGenerator $url;
+	protected IL10N $l;
 
 	public function __construct(
 		RoomManager $roomManager,
@@ -126,6 +121,13 @@ class MessageSearch implements IProvider {
 				continue;
 			}
 
+			if ($room->getLobbyState() !== Webinary::LOBBY_NONE) {
+				$participant = $room->getParticipant($user->getUID(), false);
+				if (!($participant->getPermissions() & Attendee::PERMISSIONS_LOBBY_IGNORE)) {
+					continue;
+				}
+			}
+
 			$roomMap[(string) $room->getId()] = $room;
 		}
 
@@ -197,7 +199,7 @@ class MessageSearch implements IProvider {
 		if ($message->getActorType() === Attendee::ACTOR_USERS) {
 			$iconUrl = $this->url->linkToRouteAbsolute('core.avatar.getAvatar', [
 				'userId' => $message->getActorId(),
-				'size' => 64,
+				'size' => 512,
 			]);
 		}
 

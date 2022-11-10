@@ -22,43 +22,35 @@
 <template>
 	<div>
 		<h4>{{ t('spreed', 'Chat messages') }}</h4>
-		<a
-			href="#"
+		<a href="#"
 			class="radio-element"
 			:class="{'radio-element--active': isNotifyAlways}"
 			@click.prevent.exact="setNotificationLevel(1)">
-			<VolumeHigh
-				decorative
+			<VolumeHigh decorative
 				title=""
-				:size="24"
+				:size="20"
 				class="radio-element__icon" />
-			<label
-				class="radio-element__label">
+			<label class="radio-element__label">
 				{{ t('spreed', 'All messages') }}
 			</label>
-			<Check
-				v-if="isNotifyAlways"
+			<Check v-if="isNotifyAlways"
 				class="check"
 				decorative
 				title=""
 				:size="20" />
 		</a>
-		<a
-			href="#"
+		<a href="#"
 			class="radio-element"
 			:class="{'radio-element--active': isNotifyMention}"
 			@click.prevent.exact="setNotificationLevel(2)">
-			<Account
-				decorative
+			<Account decorative
 				title=""
-				:size="24"
+				:size="20"
 				class="radio-element__icon" />
-			<label
-				class="radio-element__label">
+			<label class="radio-element__label">
 				{{ t('spreed', '@-mentions only') }}
 			</label>
-			<Check
-				v-if="isNotifyMention"
+			<Check v-if="isNotifyMention"
 				class="check"
 				decorative
 				title=""
@@ -68,16 +60,14 @@
 			class="radio-element"
 			:class="{'radio-element--active': isNotifyNever}"
 			@click.prevent.exact="setNotificationLevel(3)">
-			<VolumeOff
-				decorative
+			<VolumeOff decorative
 				title=""
-				:size="24"
+				:size="20"
 				class="radio-element__icon" />
 			<label class="radio-element__label">
 				{{ t('spreed', 'Off') }}
 			</label>
-			<Check
-				v-if="isNotifyNever"
+			<Check v-if="isNotifyNever"
 				class="check"
 				decorative
 				title=""
@@ -85,8 +75,7 @@
 		</a>
 
 		<h4>{{ t('spreed', 'Calls') }}</h4>
-		<CheckboxRadioSwitch
-			id="notification_calls"
+		<CheckboxRadioSwitch id="notification_calls"
 			:checked.sync="notifyCalls"
 			@update:checked="setNotificationCalls">
 			{{ t('spreed', 'Notify about calls in this conversation') }}
@@ -150,18 +139,18 @@ export default {
 
 	methods: {
 		/**
-		 * Set the notification level for the conversation
+		 *		 Set the notification level for the conversation		 *		 * @param {number} notificationLevel The notification level to set.
 		 *
-		 * @param {number} notificationLevel The notification level to set.
+		 * @param notificationLevel
 		 */
 		async setNotificationLevel(notificationLevel) {
 			await this.$store.dispatch('setNotificationLevel', { token: this.token, notificationLevel })
 		},
 
 		/**
-		 * Set the call notification level for the conversation
+		 *		 Set the call notification level for the conversation		 *		 * @param {boolean} isChecked Whether or not call notifications are enabled
 		 *
-		 * @param {boolean} isChecked Whether or not call notifications are enabled
+		 * @param isChecked
 		 */
 		async setNotificationCalls(isChecked) {
 			const notificationCalls = isChecked ? PARTICIPANT.NOTIFY_CALLS.ON : PARTICIPANT.NOTIFY_CALLS.OFF

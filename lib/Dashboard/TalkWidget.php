@@ -25,22 +25,32 @@ declare(strict_types=1);
 
 namespace OCA\Talk\Dashboard;
 
+use OCA\Talk\Config;
+use OCA\Talk\Exceptions\NotAllowedToUseTalkException;
 use OCP\Dashboard\IWidget;
 use OCP\IL10N;
 use OCP\IURLGenerator;
+use OCP\IUser;
+use OCP\IUserSession;
 use OCP\Util;
 
 class TalkWidget implements IWidget {
-
-	/** @var IURLGenerator */
-	private $url;
-	/** @var IL10N */
-	private $l10n;
+	private IURLGenerator $url;
+	private IL10N $l10n;
 
 	public function __construct(
+		IUserSession $userSession,
+		Config $talkConfig,
 		IURLGenerator $url,
 		IL10N $l10n
 	) {
+		$user = $userSession->getUser();
+		if ($user instanceof IUser && $talkConfig->isDisabledForUser($user)) {
+			// This is dirty and will log everytime a user opens the dashboard or requests the api,
+			// so we should look for a different solution in the server.
+			throw new NotAllowedToUseTalkException();
+		}
+
 		$this->url = $url;
 		$this->l10n = $l10n;
 	}

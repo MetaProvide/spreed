@@ -20,10 +20,10 @@
 -->
 
 <template>
-	<input
-		ref="password"
+	<input ref="password"
 		v-observe-visibility="visibilityChanged"
 		type="password"
+		autocomplete="new-password"
 		:value="value"
 		class="password-protect"
 		:placeholder="t('spreed', 'Choose a password')"

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Talk\Notification;
 
 use OCA\FederatedFileSharing\AddressHandler;
+use OCA\Talk\Chat\ChatManager;
 use OCA\Talk\Chat\CommentsManager;
 use OCA\Talk\Chat\MessageParser;
 use OCA\Talk\Config;
@@ -55,38 +56,24 @@ use OCP\Share\IManager as IShareManager;
 use OCP\Share\IShare;
 
 class Notifier implements INotifier {
-
-	/** @var IFactory */
-	protected $lFactory;
-	/** @var IURLGenerator */
-	protected $url;
-	/** @var Config */
-	protected $config;
-	/** @var IUserManager */
-	protected $userManager;
-	/** @var GuestManager */
-	protected $guestManager;
-	/** @var IShareManager */
-	private $shareManager;
-	/** @var Manager */
-	protected $manager;
-	/** @var ParticipantService */
-	protected $participantService;
-	/** @var INotificationManager */
-	protected $notificationManager;
-	/** @var ICommentsManager */
-	protected $commentManager;
-	/** @var MessageParser */
-	protected $messageParser;
-	/** @var Definitions */
-	protected $definitions;
-	/** @var AddressHandler */
-	protected $addressHandler;
+	protected IFactory $lFactory;
+	protected IURLGenerator $url;
+	protected Config $config;
+	protected IUserManager $userManager;
+	protected GuestManager $guestManager;
+	private IShareManager $shareManager;
+	protected Manager $manager;
+	protected ParticipantService $participantService;
+	protected INotificationManager $notificationManager;
+	protected ICommentsManager $commentManager;
+	protected MessageParser $messageParser;
+	protected Definitions $definitions;
+	protected AddressHandler $addressHandler;
 
 	/** @var Room[] */
-	protected $rooms = [];
+	protected array $rooms = [];
 	/** @var Participant[][] */
-	protected $participants = [];
+	protected array $participants = [];
 
 	public function __construct(IFactory $lFactory,
 								IURLGenerator $url,
@@ -268,7 +255,7 @@ class Notifier implements INotifier {
 			}
 			return $this->parseCall($notification, $room, $l);
 		}
-		if ($subject === 'reply' || $subject === 'mention' || $subject === 'chat') {
+		if ($subject === 'reply' || $subject === 'mention' || $subject === 'chat' || $subject === 'reaction') {
 			if ($room->getLobbyState() !== Webinary::LOBBY_NONE &&
 				$participant instanceof Participant &&
 				!($participant->getPermissions() & Attendee::PERMISSIONS_LOBBY_IGNORE)) {
@@ -393,7 +380,7 @@ class Notifier implements INotifier {
 			throw new AlreadyProcessedException();
 		}
 
-		if ($message->getMessageType() === 'comment_deleted') {
+		if ($message->getMessageType() === ChatManager::VERB_MESSAGE_DELETED) {
 			throw new AlreadyProcessedException();
 		}
 
@@ -411,6 +398,9 @@ class Notifier implements INotifier {
 		if (!$this->notificationManager->isPreparingPushNotification()) {
 			$notification->setParsedMessage($parsedMessage);
 			$notification->setRichMessage($message->getMessage(), $message->getMessageParameters());
+
+			// Forward the message ID as well to the clients, so they can quote the message on replies
+			$notification->setObject('chat', $notification->getObjectId() . '/' . $comment->getId());
 		}
 
 		$richSubjectParameters = [
@@ -470,6 +460,27 @@ class Notifier implements INotifier {
 					$subject = $l->t('{guest} (guest) replied to your message in conversation {call}');
 				} catch (ParticipantNotFoundException $e) {
 					$subject = $l->t('A guest replied to your message in conversation {call}');
+				}
+			}
+		} elseif ($notification->getSubject() === 'reaction') {
+			$richSubjectParameters['reaction'] = [
+				'type' => 'highlight',
+				'id' => $subjectParameters['reaction'],
+				'name' => $subjectParameters['reaction'],
+			];
+
+			if ($room->getType() === Room::TYPE_ONE_TO_ONE) {
+				$subject = $l->t('{user} reacted with {reaction} to your private message');
+			} elseif ($richSubjectUser) {
+				$subject = $l->t('{user} reacted with {reaction} to your message in conversation {call}');
+			} elseif (!$isGuest) {
+				$subject = $l->t('A deleted user reacted with {reaction} to your message in conversation {call}');
+			} else {
+				try {
+					$richSubjectParameters['guest'] = $this->getGuestParameter($room, $comment->getActorId());
+					$subject = $l->t('{guest} (guest) reacted with {reaction} to your message in conversation {call}');
+				} catch (ParticipantNotFoundException $e) {
+					$subject = $l->t('A guest reacted with {reaction} to your message in conversation {call}');
 				}
 			}
 		} elseif ($room->getType() === Room::TYPE_ONE_TO_ONE) {

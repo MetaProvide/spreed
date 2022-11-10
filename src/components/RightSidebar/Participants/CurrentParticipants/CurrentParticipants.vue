@@ -21,8 +21,7 @@
 
 <template>
 	<div>
-		<ParticipantsList
-			v-if="participantsList.length"
+		<ParticipantsList v-if="participantsList.length"
 			:items="participantsList"
 			:loading="!participantsInitialised" />
 		<Hint v-else :hint="t('spreed', 'No search results')" />
@@ -64,13 +63,12 @@ export default {
 		token() {
 			return this.$store.getters.getToken()
 		},
-
 		/**
 		 * Gets the participants array.
 		 *
 		 * @return {Array}
 		 */
-		participantsList() {
+		participants() {
 			let participants = this.$store.getters.participantsList(this.token)
 
 			if (this.searchText !== '') {
@@ -82,7 +80,23 @@ export default {
 				})
 			}
 
-			return participants.slice().sort(this.sortParticipants)
+			return participants
+		},
+
+		participantsList() {
+			return this.participants.slice().sort(this.sortParticipants)
+		},
+
+		currentParticipant() {
+			return this.participants.find(x => {
+				return x.actorId === this.$store.getters.getActorId()
+					&& x.actorType === this.$store.getters.getActorType()
+			})
+		},
+
+		currentParticipantIsModerator() {
+			const moderatorTypes = [PARTICIPANT.TYPE.OWNER, PARTICIPANT.TYPE.MODERATOR, PARTICIPANT.TYPE.GUEST_MODERATOR]
+			return this.currentParticipant && moderatorTypes.indexOf(this.currentParticipant.participantType) !== -1
 		},
 	},
 
@@ -113,30 +127,10 @@ export default {
 		},
 
 		/**
-		 * Sort two participants by:
-		 * - participants before groups
-		 * - online status
-		 * - in call
-		 * - who raised hand first
-		 * - type (moderators before normal participants)
-		 * - user status (dnd at the end)
-		 * - display name
+		 *		 Sort two participants by:		 * - participants before groups		 * - online status		 * - in call		 * - who raised hand first		 * - type (moderators before normal participants)		 * - user status (dnd at the end)		 * - display name		 *		 * @param {object} participant1 First participant		 * @param {number} participant1.participantType First participant type		 * @param {string} participant1.sessionId First participant session		 * @param {string} participant1.displayName First participant display name		 * @param {string} participant1.status First participant user status		 * @param {string} participant1.actorType First participant actor type		 * @param {number} participant1.inCall First participant in call flag		 * @param {object} participant2 Second participant		 * @param {number} participant2.participantType Second participant type		 * @param {string} participant2.sessionId Second participant session		 * @param {string} participant2.displayName Second participant display name		 * @param {string} participant2.actorType Second participant actor type		 * @param {string} participant2.status Second participant user status		 * @param {number} participant2.inCall Second participant in call flag		 * @return {number}
 		 *
-		 * @param {object} participant1 First participant
-		 * @param {number} participant1.participantType First participant type
-		 * @param {string} participant1.sessionId First participant session
-		 * @param {string} participant1.displayName First participant display name
-		 * @param {string} participant1.status First participant user status
-		 * @param {string} participant1.actorType First participant actor type
-		 * @param {number} participant1.inCall First participant in call flag
-		 * @param {object} participant2 Second participant
-		 * @param {number} participant2.participantType Second participant type
-		 * @param {string} participant2.sessionId Second participant session
-		 * @param {string} participant2.displayName Second participant display name
-		 * @param {string} participant2.actorType Second participant actor type
-		 * @param {string} participant2.status Second participant user status
-		 * @param {number} participant2.inCall Second participant in call flag
-		 * @return {number}
+		 * @param participant1
+		 * @param participant2
 		 */
 		sortParticipants(participant1, participant2) {
 			const p1IsCircle = participant1.actorType === ATTENDEE.ACTOR_TYPE.CIRCLES
@@ -206,6 +200,11 @@ export default {
 				return moderator1 ? -1 : 1
 			}
 
+			if (this.currentParticipantIsModerator) {
+				if (participant1.attendeePermissions !== participant2.attendeePermissions) {
+					return participant1.attendeePermissions < participant2.attendeePermissions ? 1 : -1
+				}
+			}
 			const participant1Away = this.isNotAvailable(participant1)
 			const participant2Away = this.isNotAvailable(participant2)
 			if (participant1Away !== participant2Away) {

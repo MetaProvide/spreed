@@ -22,12 +22,10 @@
 
 <template>
 	<div v-if="isInFile" class="talk-sidebar-callview">
-		<TopBar
-			v-show="showCallView"
+		<TopBar v-show="showCallView"
 			:is-in-call="true"
 			:is-sidebar="true" />
-		<CallView
-			v-show="showCallView"
+		<CallView v-show="showCallView"
 			:token="token"
 			:is-sidebar="true" />
 		<PreventUnload :when="warnLeaving" />
@@ -128,15 +126,9 @@ export default {
 		},
 
 		/**
-		 * Force restoring the sidebar header contents on file changes.
+		 *		 Force restoring the sidebar header contents on file changes.		 *		 * If the sidebar is opened in a different file during a call the		 * sidebar header contents may not be properly restored due to the order		 * in which the updates are handled, so it needs to be executed again		 * when the FileInfo has been set and it does not match the current		 * conversation.		 *		 * @param {object} fileInfo the watched FileInfo
 		 *
-		 * If the sidebar is opened in a different file during a call the
-		 * sidebar header contents may not be properly restored due to the order
-		 * in which the updates are handled, so it needs to be executed again
-		 * when the FileInfo has been set and it does not match the current
-		 * conversation.
-		 *
-		 * @param {object} fileInfo the watched FileInfo
+		 * @param fileInfo
 		 */
 		fileInfo(fileInfo) {
 			if (!fileInfo) {
@@ -165,13 +157,13 @@ export default {
 		},
 
 		/**
-		 * Adds a special style sheet to hide the sidebar header contents during
-		 * a call.
-		 *
-		 * The style sheet contains a rule to hide ".hidden-by-call" elements,
-		 * which is the CSS class set in the sidebar header contents during a
-		 * call.
-		 */
+ * Adds a special style sheet to hide the sidebar header contents during
+ * a call.
+ *
+ * The style sheet contains a rule to hide ".hidden-by-call" elements,
+ * which is the CSS class set in the sidebar header contents during a
+ * call.
+ */
 		addCallInFilesSidebarStyleSheet() {
 			const isCallInFilesSidebarStyleSheet = (sheet) => {
 				try {

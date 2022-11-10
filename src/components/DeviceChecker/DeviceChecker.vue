@@ -22,27 +22,21 @@
 <template>
 	<Modal v-if="modal"
 		class="talk-modal"
-		size="large"
+		size="small"
 		@close="closeModal">
 		<div class="device-checker">
 			<div class="modal-header">
-				<button
-					class="adminly-close-button"
-					@click="closeModal" />
+				<Button class="adminly-close-button" @click="closeModal" />
 			</div>
 			<h2 class="device-checker__title">
-				{{ t('spreed', 'Camera and microphone check') }}
+				{{ t("spreed", "Camera and microphone check") }}
 			</h2>
 			<!-- Preview -->
 			<div class="device-checker__preview">
 				<!-- eslint-disable-next-line -->
-				<video v-show="showVideo"
-					ref="video"
-					class="preview__video"
-					disable-picture-in-picture="true"
+				<video v-show="showVideo" ref="video" class="preview__video" disable-picture-in-picture="true"
 					tabindex="-1" />
-				<div v-show="!showVideo"
-					class="preview__novideo" />
+				<div v-show="!showVideo" class="preview__novideo" />
 			</div>
 
 			<!--
@@ -51,91 +45,77 @@
 			-->
 			<div class="device-checker__call-preferences">
 				<!-- Audio toggle -->
-				<button
-					v-tooltip="audioButtonTooltip"
-					class="device-toggle"
+				<Button v-tooltip="audioButtonTooltip"
+					type="tertiary"
 					:aria-label="audioButtonTooltip"
 					:disabled="!audioPreviewAvailable"
 					@click="toggleAudio">
-					<span class="device-toggle__icon">
-						<Microphone
-							v-if="audioOn"
+					<template #icon>
+						<Microphone v-if="audioOn"
 							title=""
 							decorative
 							:size="20" />
-						<MicrophoneOff
-							v-else
+						<MicrophoneOff v-else
 							title=""
 							decorative
 							:size="20" />
-					</span>
-				</button>
-				<VolumeIndicator
-					class="indicator"
+					</template>
+				</Button>
+				<VolumeIndicator class="indicator"
 					:audio-preview-available="audioPreviewAvailable"
 					:current-volume="currentVolume"
 					:volume-threshold="volumeThreshold"
 					:disabled="!audioOn" />
 
 				<!-- Video toggle -->
-				<button
-					v-tooltip="videoButtonTooltip"
-					class="device-toggle"
+				<Button v-tooltip="videoButtonTooltip"
+					type="tertiary"
 					:aria-label="videoButtonTooltip"
 					:disabled="!videoPreviewAvailable"
 					@click="toggleVideo">
-					<span class="device-toggle__icon">
-						<Video
-							v-if="videoOn"
+					<template #icon>
+						<Video v-if="videoOn"
 							title=""
 							decorative
 							:size="20" />
-						<VideoOff
-							v-else
+						<VideoOff v-else
 							title=""
 							decorative
 							:size="20" />
-					</span>
-				</button>
+					</template>
+				</Button>
 
 				<!-- Blur toggle -->
-				<button
-					v-if="videoPreviewAvailable && blurPreviewAvailable"
+				<Button v-if="videoPreviewAvailable && blurPreviewAvailable"
 					v-tooltip="blurButtonTooltip"
-					class="device-toggle"
+					type="tertiary"
 					:aria-label="blurButtonTooltip"
 					:disabled="!blurPreviewAvailable"
 					@click="toggleBlur">
-					<span class="device-toggle__icon">
-						<Blur
-							v-if="blurOn"
-							slot="icon"
+					<template #icon>
+						<Blur v-if="blurOn"
 							:size="20"
 							decorative
 							title="" />
-						<BlurOff
-							v-else
-							slot="icon"
+						<BlurOff v-else
 							:size="20"
 							decorative
 							title="" />
-					</span>
-				</button>
+					</template>
+				</Button>
 			</div>
 
 			<!-- Device selection -->
 			<div class="device-checker__device-selection">
-				<button v-if="!showDeviceSelection"
+				<Button v-if="!showDeviceSelection"
+					type="tertiary"
 					class="select-devices"
 					@click="showDeviceSelection = true">
-					<span class="select-devices__icon">
-						<Cog
-							title=""
-							decorative
-							:size="20" />
-					</span>
-					<span> {{ t('spreed', 'Choose devices') }}</span>
-				</button>
+					<template #icon>
+						<Cog title="" decorative :size="20" />
+					</template>
+					{{ t("spreed", "Choose devices") }}
+				</Button>
 				<template v-if="showDeviceSelection">
 					<MediaDevicesSelector kind="audioinput"
 						:devices="devices"
@@ -147,15 +127,17 @@
 						@update:deviceId="videoInputId = $event" />
 				</template>
 			</div>
-			<CheckboxRadioSwitch :checked.sync="showDeviceChecker"
-				class="checkbox">
-				{{ t('spreed', 'Always show this dialog before joining a call in this conversation.') }}
+			<CheckboxRadioSwitch :checked.sync="showDeviceChecker" class="checkbox">
+				{{
+					t(
+						"spreed",
+						"Always show this dialog before joining a call in this conversation."
+					)
+				}}
 			</CheckboxRadioSwitch>
 
 			<!-- Join call -->
-			<CallButton
-				class="call-button"
-				:force-join-call="true" />
+			<CallButton class="call-button" :force-join-call="true" />
 		</div>
 	</Modal>
 </template>
@@ -178,7 +160,7 @@ import { subscribe, unsubscribe } from '@nextcloud/event-bus'
 import CheckboxRadioSwitch from '@nextcloud/vue/dist/Components/CheckboxRadioSwitch'
 import BrowserStorage from '../../services/BrowserStorage'
 import VolumeIndicator from '../VolumeIndicator/VolumeIndicator.vue'
-
+import Button from '@nextcloud/vue/dist/Components/Button'
 export default {
 	name: 'DeviceChecker',
 
@@ -199,6 +181,7 @@ export default {
 		CallButton,
 		CheckboxRadioSwitch,
 		VolumeIndicator,
+		Button,
 	},
 
 	mixins: [devices],
@@ -212,7 +195,6 @@ export default {
 			videoOn: undefined,
 			blurOn: undefined,
 			showDeviceChecker: true,
-
 		}
 	},
 
@@ -224,12 +206,13 @@ export default {
 		guestName() {
 			return this.$store.getters.getGuestName(
 				this.$store.getters.getToken(),
-				this.$store.getters.getActorId(),
+				this.$store.getters.getActorId()
 			)
 		},
 
 		firstLetterOfGuestName() {
-			const customName = this.guestName !== t('spreed', 'Guest') ? this.guestName : '?'
+			const customName
+				= this.guestName !== t('spreed', 'Guest') ? this.guestName : '?'
 			return customName.charAt(0)
 		},
 
@@ -253,18 +236,24 @@ export default {
 			if (!this.audioPreviewAvailable) {
 				return t('spreed', 'No audio')
 			}
-			return this.audioOn ? t('spreed', 'Mute audio') : t('spreed', 'Unmute audio')
+			return this.audioOn
+				? t('spreed', 'Mute audio')
+				: t('spreed', 'Unmute audio')
 		},
 
 		videoButtonTooltip() {
 			if (!this.videoPreviewAvailable) {
 				return t('spreed', 'No camera')
 			}
-			return this.videoOn ? t('spreed', 'Disable video') : t('spreed', 'Enable video')
+			return this.videoOn
+				? t('spreed', 'Disable video')
+				: t('spreed', 'Enable video')
 		},
 
 		blurButtonTooltip() {
-			return this.blurOn ? t('spreed', 'Disable background blur') : t('spreed', 'Blur background')
+			return this.blurOn
+				? t('spreed', 'Disable background blur')
+				: t('spreed', 'Blur background')
 		},
 	},
 
@@ -273,7 +262,9 @@ export default {
 			if (newValue) {
 				this.audioOn = !localStorage.getItem('audioDisabled_' + this.token)
 				this.videoOn = !localStorage.getItem('videoDisabled_' + this.token)
-				this.blurOn = !!localStorage.getItem('virtualBackgroundEnabled_' + this.token)
+				this.blurOn = !!localStorage.getItem(
+					'virtualBackgroundEnabled_' + this.token
+				)
 
 				this.initializeDevicesMixin()
 			} else {
@@ -360,21 +351,22 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/variables.scss';
-@import '../../assets/avatar.scss';
+@import "../../assets/variables";
+@import "../../assets/avatar";
 @include avatar-mixin(64px);
 @include avatar-mixin(128px);
 
 .device-checker {
-	width: 350px;
 	padding: 20px;
 	background-color: var(--color-main-background);
 	overflow-y: auto;
 	overflow-x: hidden;
+
 	&__title {
 		text-align: center;
 		color: var(--color-main-text);
 	}
+
 	&__preview {
 		position: relative;
 		display: flex;
@@ -414,7 +406,7 @@ export default {
 		overflow: hidden;
 		width: 100%;
 		height: 100%;
-		background-image: url('../../../img/user.svg');
+		background-image: url("../../../img/user.svg");
 		background-position: center;
 		background-repeat: no-repeat;
 	}
@@ -429,19 +421,6 @@ export default {
 	box-shadow: none;
 	padding: 0;
 	margin: auto;
-	&__icon {
-		margin-right: 4px;
-	}
-	opacity: 0.8;
-	&:hover,
-	&:focus {
-		opacity: 1;
-	}
-}
-
-.device-toggle {
-	background: none;
-	border: none;
 }
 
 .call-button {
@@ -467,13 +446,13 @@ export default {
 	display: flex !important;
 }
 
-.modal-header{
+.modal-header {
 	display: flex;
 }
 
 .adminly-close-button {
 	margin-left: auto;
-	background-image: url('../../../img/close.svg');
+	background-image: url("../../../img/close.svg");
 	background-position: center;
 	background-repeat: no-repeat;
 	padding-inline: 1rem !important;
@@ -494,33 +473,37 @@ export default {
 	background-size: contain;
 }
 
-.microphone-icon svg{
-	background-image: url('../../../img/adminly-microphone.svg');
+.microphone-icon svg {
+	background-image: url("../../../img/adminly-microphone.svg");
 }
 
-.microphone-off-icon svg{
-	background-image: url('../../../img/adminly-microphone-mute.svg');
+.microphone-off-icon svg {
+	background-image: url("../../../img/adminly-microphone-mute.svg");
 }
 
-.video-icon svg{
-	background-image: url('../../../img/adminly-video.svg');
+.video-icon svg {
+	background-image: url("../../../img/adminly-video.svg");
 }
 
-.video-off-icon svg{
-	background-image: url('../../../img/adminly-video-disabled.svg');
+.video-off-icon svg {
+	background-image: url("../../../img/adminly-video-disabled.svg");
 }
 
-.blur-icon svg{
-	background-image: url('../../../img/adminly-background-blur.svg');
+.blur-icon svg {
+	background-image: url("../../../img/adminly-background-blur.svg");
 }
 
-.blur-off-icon svg{
-	background-image: url('../../../img/adminly-background-blur-off.svg');
+.blur-off-icon svg {
+	background-image: url("../../../img/adminly-background-blur-off.svg");
 }
 
-.cog-icon svg{
+.cog-icon svg {
 	background-repeat: no-repeat;
 	width: 31px;
-	background-image: url('../../../img/adminly-devices.svg');
+	background-image: url("../../../img/adminly-devices.svg");
+}
+
+::v-deep .modal-container {
+	display: flex !important;
 }
 </style>

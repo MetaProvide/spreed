@@ -67,16 +67,14 @@
 				     strange times in which no item is selected and thus there
 				     is no data, so do not use the Mention component in those
 				     cases. -->
-				<Mention
-					v-if="scope.current.id"
+				<Mention v-if="scope.current.id"
 					:id="scope.current.id"
 					:type="getTypeForMentionComponent(scope.current)"
 					:name="scope.current.label"
 					:data-mention-id="scope.current.id" />
 			</span>
 		</template>
-		<div
-			ref="contentEditable"
+		<div ref="contentEditable"
 			v-shortkey.once="['c']"
 			:contenteditable="activeInput"
 			:placeHolder="placeholderText"
@@ -106,12 +104,9 @@ import escapeHtml from 'escape-html'
 import debounce from 'debounce'
 
 /**
- * Checks whether the given style sheet is the default style sheet from the
- * vue-at component or not.
+ * Checks whether the given style sheet is the default style sheet from the * vue-at component or not. * * @param {CSSStyleSheet} sheet the style sheet to check. * @return {boolean} True if it is the style sheet from vue-at, false *          otherwise.
  *
- * @param {CSSStyleSheet} sheet the style sheet to check.
- * @return {boolean} True if it is the style sheet from vue-at, false
- *          otherwise.
+ * @param sheet
  */
 function isDefaultAtWhoStyleSheet(sheet) {
 	try {
@@ -190,8 +185,8 @@ export default {
 		},
 
 		/**
-		 * Determines if the input is active
-		 */
+ * Determines if the input is active
+ */
 		activeInput: {
 			type: Boolean,
 			default: true,
@@ -203,8 +198,8 @@ export default {
 		},
 
 		/**
-		 * The token of the conversation to get candidate mentions for.
-		 */
+ * The token of the conversation to get candidate mentions for.
+ */
 		token: {
 			type: String,
 			required: true,
@@ -318,11 +313,9 @@ export default {
 		},
 
 		/**
-		 * Emits the submit event when enter is pressed (look
-		 * at the v-on in the template) unless shift is pressed:
-		 * in this case a new line will be created.
+		 *		 Emits the submit event when enter is pressed (look		 * at the v-on in the template) unless shift is pressed:		 * in this case a new line will be created.		 *		 * @param {object} event the event object;
 		 *
-		 * @param {object} event the event object;
+		 * @param event
 		 */
 		handleKeydownEnter(event) {
 			// Prevent submit event when vue-at panel is open, as that should
@@ -345,9 +338,9 @@ export default {
 		},
 
 		/**
-		 * Loose focus of the chat so shortcuts can be used
+		 *		 Loose focus of the chat so shortcuts can be used		 *		 * @param {object} event the event object;
 		 *
-		 * @param {object} event the event object;
+		 * @param event
 		 */
 		handleKeydownEsc(event) {
 			document.activeElement.blur()
@@ -416,8 +409,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@use 'sass:math';
-
 @import '../../../assets/variables';
 
 .atwho-wrapper {
@@ -439,7 +430,7 @@ div[contenteditable] {
 	font-size: $chat-font-size;
 	line-height: $chat-line-height;
 	min-height: $clickable-area;
-	border-radius: math.div($clickable-area, 2);
+	border-radius: calc($clickable-area / 2);
 	border: 1px solid var(--color-border-dark);
 	max-height: 180px;
 	overflow-y: auto;

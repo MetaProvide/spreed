@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Talk\AppInfo;
 
+use OCP\Util;
 use OCA\Circles\Events\AddingCircleMemberEvent;
 use OCA\Circles\Events\CircleDestroyedEvent;
 use OCA\Circles\Events\RemovingCircleMemberEvent;
@@ -42,7 +43,6 @@ use OCA\Talk\Dashboard\TalkWidget;
 use OCA\Talk\Deck\DeckPluginLoader;
 use OCA\Talk\Events\AttendeesAddedEvent;
 use OCA\Talk\Events\AttendeesRemovedEvent;
-use OCA\Talk\Events\ChatEvent;
 use OCA\Talk\Events\RoomEvent;
 use OCA\Talk\Federation\CloudFederationProviderTalk;
 use OCA\Talk\Files\Listener as FilesListener;
@@ -62,6 +62,7 @@ use OCA\Talk\Middleware\CanUseTalkMiddleware;
 use OCA\Talk\Middleware\InjectionMiddleware;
 use OCA\Talk\Notification\Listener as NotificationListener;
 use OCA\Talk\Notification\Notifier;
+use OCA\Talk\OCP\TalkBackend;
 use OCA\Talk\Profile\TalkAction;
 use OCA\Talk\PublicShare\TemplateLoader as PublicShareTemplateLoader;
 use OCA\Talk\PublicShareAuth\Listener as PublicShareAuthListener;
@@ -81,7 +82,6 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\IAppContainer;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Collaboration\Resources\IProviderManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Federation\ICloudFederationProvider;
@@ -139,40 +139,40 @@ class Application extends App implements IBootstrap {
 		$context->registerDashboardWidget(TalkWidget::class);
 
 		$context->registerProfileLinkAction(TalkAction::class);
+
+		$context->registerTalkBackend(TalkBackend::class);
 	}
 
 	public function boot(IBootContext $context): void {
 		$server = $context->getServerContainer();
-		if (!$server->getSession()->get('oldUserId')) {
-			$this->registerNotifier($server);
-			$this->registerCollaborationResourceProvider($server);
-			$this->registerClientLinks($server);
-			$this->registerNavigationLink($server);
 
-			/** @var IEventDispatcher $dispatcher */
-			$dispatcher = $server->query(IEventDispatcher::class);
+		$this->registerNotifier($server);
+		$this->registerCollaborationResourceProvider($server);
+		$this->registerClientLinks($server);
+		$this->registerNavigationLink($server);
 
-			ActivityListener::register($dispatcher);
-			NotificationListener::register($dispatcher);
-			SystemMessageListener::register($dispatcher);
-			ParserListener::register($dispatcher);
-			PublicShareAuthListener::register($dispatcher);
-			FilesListener::register($dispatcher);
-			FilesTemplateLoader::register($dispatcher);
-			RestrictStartingCallsListener::register($dispatcher);
-			RoomShareProvider::register($dispatcher);
-			SignalingListener::register($dispatcher);
-			CommandListener::register($dispatcher);
-			CollaboratorsListener::register($dispatcher);
-			ResourceListener::register($dispatcher);
-			ChangelogListener::register($dispatcher);
-			ShareListener::register($dispatcher);
-			StatusListener::register($dispatcher);
+		/** @var IEventDispatcher $dispatcher */
+		$dispatcher = $server->get(IEventDispatcher::class);
 
-			$this->registerRoomActivityHooks($dispatcher);
-			$this->registerChatHooks($dispatcher);
-			$context->injectFn(\Closure::fromCallable([$this, 'registerCloudFederationProviderManager']));
-		}
+		ActivityListener::register($dispatcher);
+		NotificationListener::register($dispatcher);
+		SystemMessageListener::register($dispatcher);
+		ParserListener::register($dispatcher);
+		PublicShareAuthListener::register($dispatcher);
+		FilesListener::register($dispatcher);
+		FilesTemplateLoader::register($dispatcher);
+		RestrictStartingCallsListener::register($dispatcher);
+		RoomShareProvider::register($dispatcher);
+		SignalingListener::register($dispatcher);
+		CommandListener::register($dispatcher);
+		CollaboratorsListener::register($dispatcher);
+		ResourceListener::register($dispatcher);
+		ChangelogListener::register($dispatcher);
+		ShareListener::register($dispatcher);
+		StatusListener::register($dispatcher);
+
+		$this->registerChatHooks($dispatcher);
+		$context->injectFn(\Closure::fromCallable([$this, 'registerCloudFederationProviderManager']));
 	}
 
 	protected function registerNotifier(IServerContainer $server): void {
@@ -182,10 +182,10 @@ class Application extends App implements IBootstrap {
 
 	protected function registerCollaborationResourceProvider(IServerContainer $server): void {
 		/** @var IProviderManager $resourceManager */
-		$resourceManager = $server->query(IProviderManager::class);
+		$resourceManager = $server->get(IProviderManager::class);
 		$resourceManager->registerResourceProvider(ConversationProvider::class);
 		$server->getEventDispatcher()->addListener('\OCP\Collaboration\Resources::loadAdditionalScripts', function () {
-			\OCP\Util::addScript(self::APP_ID, 'talk-collections');
+			Util::addScript(self::APP_ID, 'talk-collections');
 		});
 	}
 
@@ -200,7 +200,7 @@ class Application extends App implements IBootstrap {
 	protected function registerNavigationLink(IServerContainer $server): void {
 		$server->getNavigationManager()->add(function () use ($server) {
 			/** @var Config $config */
-			$config = $server->query(Config::class);
+			$config = $server->get(Config::class);
 			$user = $server->getUserSession()->getUser();
 			return [
 				'id' => self::APP_ID,
@@ -211,18 +211,6 @@ class Application extends App implements IBootstrap {
 				'type' => $user instanceof IUser && !$config->isDisabledForUser($user) ? 'link' : 'hidden',
 			];
 		});
-	}
-
-	protected function registerRoomActivityHooks(IEventDispatcher $dispatcher): void {
-		$listener = function (ChatEvent $event): void {
-			$room = $event->getRoom();
-			/** @var ITimeFactory $timeFactory */
-			$timeFactory = $this->getContainer()->query(ITimeFactory::class);
-			$room->setLastActivity($timeFactory->getDateTime());
-		};
-
-		$dispatcher->addListener(ChatManager::EVENT_AFTER_MESSAGE_SEND, $listener);
-		$dispatcher->addListener(ChatManager::EVENT_AFTER_SYSTEM_MESSAGE_SEND, $listener);
 	}
 
 	protected function registerChatHooks(IEventDispatcher $dispatcher): void {

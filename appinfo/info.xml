@@ -52,7 +52,7 @@ And in the works for the [coming versions](https://github.com/nextcloud/spreed/m
 	<screenshot>https://raw.githubusercontent.com/nextcloud/spreed/master/docs/video-verfication.png</screenshot>
 
 	<dependencies>
-		<nextcloud min-version="23" max-version="23" />
+		<nextcloud min-version="24" max-version="24" />
 	</dependencies>
 
 	<background-jobs>
@@ -101,6 +101,7 @@ And in the works for the [coming versions](https://github.com/nextcloud/spreed/m
 		<command>OCA\Talk\Command\Room\Promote</command>
 		<command>OCA\Talk\Command\Room\Demote</command>
 		<command>OCA\Talk\Command\Room\Update</command>
+		<command>OCA\Talk\Command\User\Remove</command>
 	</commands>
 
 	<settings>

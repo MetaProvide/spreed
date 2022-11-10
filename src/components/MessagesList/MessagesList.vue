@@ -28,19 +28,15 @@ get the messagesList array and loop through the list to generate the messages.
 <template>
 	<!-- size and remain refer to the amount and initial height of the items that
 	are outside of the viewport -->
-	<div
-		ref="scroller"
+	<div ref="scroller"
 		class="scroller"
 		@scroll="debounceHandleScroll">
-		<div
-			v-if="displayMessagesLoader"
+		<div v-if="displayMessagesLoader"
 			class="scroller__loading"
 			disabled>
-			<div
-				class="icon-loading" />
+			<div class="icon-loading" />
 		</div>
-		<MessagesGroup
-			v-for="(item, index) of messagesGroupedByAuthor"
+		<MessagesGroup v-for="(item, index) of messagesGroupedByAuthor"
 			:key="item[0].id"
 			:style="{ height: item.height + 'px' }"
 			v-bind="item"
@@ -49,20 +45,21 @@ get the messagesList array and loop through the list to generate the messages.
 			:next-message-id="(messagesGroupedByAuthor[index + 1] && messagesGroupedByAuthor[index + 1][0].id) || 0"
 			:previous-message-id="(index > 0 && messagesGroupedByAuthor[index - 1][messagesGroupedByAuthor[index - 1].length - 1].id) || 0" />
 		<template v-if="!messagesGroupedByAuthor.length">
-			<LoadingPlaceholder
-				type="messages"
+			<LoadingPlaceholder type="messages"
 				:count="15" />
 		</template>
 		<transition name="fade">
-			<button v-show="!isChatScrolledToBottom"
+			<Button v-show="!isChatScrolledToBottom"
+				type="secondary"
 				:aria-label="scrollToBottomAriaLabel"
 				class="scroll-to-bottom"
 				@click="smoothScrollToBottom">
-				<ChevronDown
-					decorative
-					title=""
-					:size="20" />
-			</button>
+				<template #icon>
+					<ChevronDown decorative
+						title=""
+						:size="20" />
+				</template>
+			</Button>
 		</transition>
 	</div>
 </template>
@@ -79,6 +76,7 @@ import { EventBus } from '../../services/EventBus'
 import LoadingPlaceholder from '../LoadingPlaceholder'
 import ChevronDown from 'vue-material-design-icons/ChevronDown'
 import uniqueId from 'lodash/uniqueId'
+import Button from '@nextcloud/vue/dist/Components/Button'
 
 export default {
 	name: 'MessagesList',
@@ -86,6 +84,7 @@ export default {
 		LoadingPlaceholder,
 		MessagesGroup,
 		ChevronDown,
+		Button,
 	},
 
 	mixins: [
@@ -241,9 +240,6 @@ export default {
 		isWindowVisible(visible) {
 			if (visible) {
 				this.onWindowFocus()
-				// FIXME: the sidebar chat takes much longer to open, this is why we need a higher value here
-				// need to investigate why the sidebar takes that long to open and is not even animated
-				window.setTimeout(() => this.scrollToFocussedMessage(), 100)
 			}
 		},
 		chatIdentifier: {
@@ -285,23 +281,10 @@ export default {
 
 	methods: {
 		/**
-		 * Compare two messages to decide if they should be grouped
+		 *		 Compare two messages to decide if they should be grouped		 *		 * @param {object} message1 The new message		 * @param {string} message1.id The ID of the new message		 * @param {string} message1.actorType Actor type of the new message		 * @param {string} message1.actorId Actor id of the new message		 * @param {string} message1.actorDisplayName Actor displayname of the new message		 * @param {string} message1.systemMessage System message content of the new message		 * @param {number} message1.timestamp Timestamp of the new message		 * @param {null|object} message2 The previous message		 * @param {string} message2.id The ID of the second message		 * @param {string} message2.actorType Actor type of the previous message		 * @param {string} message2.actorId Actor id of the previous message		 * @param {string} message2.actorDisplayName Actor display name of previous message		 * @param {string} message2.systemMessage System message content of the previous message		 * @param {number} message2.timestamp Timestamp of the second message		 * @return {boolean} Boolean if the messages should be grouped or not
 		 *
-		 * @param {object} message1 The new message
-		 * @param {string} message1.id The ID of the new message
-		 * @param {string} message1.actorType Actor type of the new message
-		 * @param {string} message1.actorId Actor id of the new message
-		 * @param {string} message1.actorDisplayName Actor displayname of the new message
-		 * @param {string} message1.systemMessage System message content of the new message
-		 * @param {number} message1.timestamp Timestamp of the new message
-		 * @param {null|object} message2 The previous message
-		 * @param {string} message2.id The ID of the second message
-		 * @param {string} message2.actorType Actor type of the previous message
-		 * @param {string} message2.actorId Actor id of the previous message
-		 * @param {string} message2.actorDisplayName Actor display name of previous message
-		 * @param {string} message2.systemMessage System message content of the previous message
-		 * @param {number} message2.timestamp Timestamp of the second message
-		 * @return {boolean} Boolean if the messages should be grouped or not
+		 * @param message1
+		 * @param message2
 		 */
 		messagesShouldBeGrouped(message1, message2) {
 			if (!message2) {
@@ -333,28 +316,20 @@ export default {
 		},
 
 		/**
-		 * Check if 2 messages are from the same date
-		 *
-		 * @param {object} message1 The new message
-		 * @param {string} message1.id The ID of the new message
-		 * @param {number} message1.timestamp Timestamp of the new message
-		 * @param {null|object} message2 The previous message
-		 * @param {string} message2.id The ID of the second message
-		 * @param {number} message2.timestamp Timestamp of the second message
-		 * @return {boolean} Boolean if the messages have the same date
-		 */
+ *		 Check if 2 messages are from the same date		 *		 * @param {object} message1 The new message		 * @param {string} message1.id The ID of the new message		 * @param {number} message1.timestamp Timestamp of the new message		 * @param {null|object} message2 The previous message		 * @param {string} message2.id The ID of the second message		 * @param {number} message2.timestamp Timestamp of the second message		 * @return {boolean} Boolean if the messages have the same date
+ *
+ * @param message1
+ * @param message2
+ */
 		messagesHaveDifferentDate(message1, message2) {
 			return !message2 // There is no previous message
 				|| this.getDateOfMessage(message1).format('YYYY-MM-DD') !== this.getDateOfMessage(message2).format('YYYY-MM-DD')
 		},
 
 		/**
-		 * Generate the date header between the messages
+		 *		 Generate the date header between the messages		 *		 * @param {object} message The message object		 * @param {string} message.id The ID of the message		 * @param {number} message.timestamp Timestamp of the message		 * @return {string} Translated string of "<Today>, <November 11th, 2019>", "<3 days ago>, <November 8th, 2019>"
 		 *
-		 * @param {object} message The message object
-		 * @param {string} message.id The ID of the message
-		 * @param {number} message.timestamp Timestamp of the message
-		 * @return {string} Translated string of "<Today>, <November 11th, 2019>", "<3 days ago>, <November 8th, 2019>"
+		 * @param message
 		 */
 		generateDateSeparator(message) {
 			const date = this.getDateOfMessage(message)
@@ -384,12 +359,9 @@ export default {
 		},
 
 		/**
-		 * Generate the date of the messages
+		 *		 Generate the date of the messages		 *		 * @param {object} message The message object		 * @param {string} message.id The ID of the message		 * @param {number} message.timestamp Timestamp of the message		 * @return {object} MomentJS object
 		 *
-		 * @param {object} message The message object
-		 * @param {string} message.id The ID of the message
-		 * @param {number} message.timestamp Timestamp of the message
-		 * @return {object} MomentJS object
+		 * @param message
 		 */
 		getDateOfMessage(message) {
 			if (message.id.toString().startsWith('temp-')) {
@@ -402,7 +374,7 @@ export default {
 			let focussed = null
 			if (this.$route?.hash?.startsWith('#message_')) {
 				// scroll to message in URL anchor
-				focussed = this.focusMessage(this.$route.hash.substr(9), false)
+				focussed = this.focusMessage(this.$route.hash.slice(9), false)
 			}
 
 			if (!focussed && this.visualLastReadMessageId) {
@@ -462,7 +434,7 @@ export default {
 				// scroll right away to avoid delays
 				if (!this.$store.getters.hasMoreMessagesToLoad(this.token)) {
 					hasScrolled = true
-					await this.$nextTick(() => {
+					this.$nextTick(() => {
 						this.scrollToFocussedMessage()
 					})
 				}
@@ -498,9 +470,9 @@ export default {
 		},
 
 		/**
-		 * Get messages history.
+		 *		 Get messages history.		 *		 * @param {boolean} includeLastKnown Include or exclude the last known message in the response
 		 *
-		 * @param {boolean} includeLastKnown Include or exclude the last known message in the response
+		 * @param includeLastKnown
 		 */
 		async getOldMessages(includeLastKnown) {
 			// Make the request
@@ -522,9 +494,9 @@ export default {
 		},
 
 		/**
-		 * Creates a long polling request for a new message.
+		 *		 Creates a long polling request for a new message.		 *		 * @param {boolean} scrollToBottom Whether we should try to automatically scroll to the bottom
 		 *
-		 * @param {boolean} scrollToBottom Whether we should try to automatically scroll to the bottom
+		 * @param scrollToBottom
 		 */
 		async getNewMessages(scrollToBottom = true) {
 			if (this.destroying) {
@@ -625,13 +597,9 @@ export default {
 		},
 
 		/**
-		 * Finds the last message that is fully visible in the scroller viewport
+		 *		 Finds the last message that is fully visible in the scroller viewport		 *		 * Starts searching forward after the given message element until we reach		 * the bottom of the viewport.		 *		 * @param {object} messageEl message element after which to start searching		 * @return {object} DOM element for the last visible message
 		 *
-		 * Starts searching forward after the given message element until we reach
-		 * the bottom of the viewport.
-		 *
-		 * @param {object} messageEl message element after which to start searching
-		 * @return {object} DOM element for the last visible message
+		 * @param messageEl
 		 */
 		findFirstVisibleMessage(messageEl) {
 			let el = messageEl
@@ -750,8 +718,9 @@ export default {
 		},
 
 		/**
-		 * @param {object} options Event options
-		 * @param {boolean} options.force Set to true, if the chat should be scrolled to the bottom even when it was not before
+		 *		 @param {object} options Event options		 * @param {boolean} options.force Set to true, if the chat should be scrolled to the bottom even when it was not before
+		 *
+		 * @param options
 		 */
 		handleScrollChatToBottomEvent(options) {
 			if ((options && options.force) || this.isChatScrolledToBottom) {
@@ -797,12 +766,11 @@ export default {
 		},
 
 		/**
-		 * Temporarily highlight the given message id with a fade out effect.
+		 *		 Temporarily highlight the given message id with a fade out effect.		 *		 * @param {string} messageId message id		 * @param {boolean} smooth true to smooth scroll, false to jump directly		 * @param {boolean} highlightAnimation true to highlight and set focus to the message		 * @return {boolean} true if element was found, false otherwise
 		 *
-		 * @param {string} messageId message id
-		 * @param {boolean} smooth true to smooth scroll, false to jump directly
-		 * @param {boolean} highlightAnimation true to highlight and set focus to the message
-		 * @return {boolean} true if element was found, false otherwise
+		 * @param messageId
+		 * @param smooth
+		 * @param highlightAnimation
 		 */
 		focusMessage(messageId, smooth = true, highlightAnimation = true) {
 			const element = document.getElementById(`message_${messageId}`)
@@ -882,7 +850,7 @@ export default {
 					// the hash
 					window.setTimeout(() => {
 						// scroll to message in URL anchor
-						this.focusMessage(to.hash.substr(9), true)
+						this.focusMessage(to.hash.slice(9), true)
 					}, 2)
 				}
 			}
@@ -905,7 +873,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/variables.scss';
+@import '../../assets/variables';
 
 .scroller {
 	flex: 1 0;
@@ -920,16 +888,9 @@ export default {
 
 .scroll-to-bottom {
 	position: absolute;
-	width: 44px;
-	height: 44px;
 	bottom: 76px;
 	right: 24px;
 	z-index: 2;
-	padding: 0;
-	margin: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
 }
 
 </style>

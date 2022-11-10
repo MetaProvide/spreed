@@ -35,8 +35,9 @@ use OCP\IL10N;
 use OCP\IUserSession;
 use OCP\L10N\IFactory;
 use PHPUnit\Framework\MockObject\MockObject;
+use Test\TestCase;
 
-class AdminSettingsTest extends \Test\TestCase {
+class AdminSettingsTest extends TestCase {
 
 	/** @var Config|MockObject */
 	protected $talkConfig;
@@ -58,8 +59,7 @@ class AdminSettingsTest extends \Test\TestCase {
 	protected $l10n;
 	/** @var IFactory|MockObject  */
 	protected $l10nFactory;
-	/** @var AdminSettings */
-	protected $admin;
+	protected ?AdminSettings $admin = null;
 
 	public function setUp(): void {
 		parent::setUp();

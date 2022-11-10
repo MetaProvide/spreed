@@ -21,8 +21,7 @@
 
 <template>
 	<div class="top-bar" :class="{ 'in-call': isInCall }">
-		<ConversationIcon
-			v-if="!isInCall"
+		<ConversationIcon v-if="!isInCall"
 			:key="conversation.token"
 			class="conversation-icon"
 			:offline="isPeerOffline"
@@ -54,8 +53,7 @@
 				</p>
 			</div>
 		</a>
-		<LocalMediaControls
-			v-if="isInCall"
+		<LocalMediaControls v-if="isInCall"
 			class="local-media-controls"
 			:token="token"
 			:model="localMediaModel"
@@ -70,68 +68,55 @@
 				class="top-bar__separator" />
 
 			<!-- sidebar toggle -->
-			<Actions
-				v-if="!isSidebar"
+			<Actions v-if="!isSidebar"
 				v-shortkey.once="['f']"
 				class="top-bar__button"
 				menu-align="right"
 				:aria-label="t('spreed', 'Conversation actions')"
 				:container="container"
 				@shortkey.native="toggleFullscreen">
-				<Cog
-					slot="icon"
+				<Cog slot="icon"
 					:size="20"
 					decorative
 					title="" />
-				<ActionButton
-					:icon="iconFullscreen"
+				<ActionButton :icon="iconFullscreen"
 					:aria-label="t('spreed', 'Toggle fullscreen')"
 					:close-after-click="true"
 					@click="toggleFullscreen">
 					{{ labelFullscreen }}
 				</ActionButton>
-				<ActionSeparator
-					v-if="showModerationOptions" />
-				<ActionLink
-					v-if="isFileConversation"
+				<ActionSeparator v-if="showModerationOptions" />
+				<ActionLink v-if="isFileConversation"
 					icon="icon-text"
 					:href="linkToFile">
 					{{ t('spreed', 'Go to file') }}
 				</ActionLink>
-				<template
-					v-if="showModerationOptions">
-					<ActionButton
-						:close-after-click="true"
+				<template v-if="showModerationOptions">
+					<ActionButton :close-after-click="true"
 						icon="icon-rename"
 						@click="handleRenameConversation">
 						{{ t('spreed', 'Rename conversation') }}
 					</ActionButton>
 				</template>
-				<ActionButton
-					v-if="!isOneToOneConversation"
+				<ActionButton v-if="!isOneToOneConversation"
 					icon="icon-clippy"
 					:close-after-click="true"
 					@click="handleCopyLink">
 					{{ t('spreed', 'Copy link') }}
 				</ActionButton>
-				<template
-					v-if="showModerationOptions && canFullModerate && isInCall">
+				<template v-if="showModerationOptions && canFullModerate && isInCall">
 					<ActionSeparator />
-					<ActionButton
-						:close-after-click="true"
+					<ActionButton :close-after-click="true"
 						@click="forceMuteOthers">
-						<MicrophoneOff
-							slot="icon"
+						<MicrophoneOff slot="icon"
 							:size="20"
 							decorative
 							title="" />
 						{{ t('spreed', 'Mute others') }}
 					</ActionButton>
 				</template>
-				<ActionSeparator
-					v-if="showModerationOptions" />
-				<ActionButton
-					icon="icon-settings"
+				<ActionSeparator v-if="showModerationOptions" />
+				<ActionButton icon="icon-settings"
 					:close-after-click="true"
 					@click="openConversationSettings">
 					{{ t('spreed', 'Conversation settings') }}
@@ -141,26 +126,22 @@
 				class="top-bar__button"
 				close-after-click="true"
 				:container="container">
-				<ActionButton
-					v-if="isInCall"
+				<ActionButton v-if="isInCall"
 					key="openSideBarButtonMessageText"
 					@click="openSidebar">
-					<MessageText
-						slot="icon"
+					<MessageText slot="icon"
 						:size="20"
 						title=""
 						fill-color="#ffffff"
 						decorative />
 				</ActionButton>
-				<ActionButton
-					v-else
+				<ActionButton v-else
 					key="openSideBarButtonMenuPeople"
 					:icon="iconMenuPeople"
 					@click="openSidebar" />
 			</Actions>
 		</div>
-		<CounterBubble
-			v-if="!isSidebar && showOpenSidebarButton && isInCall && unreadMessagesCounter > 0"
+		<CounterBubble v-if="!isSidebar && showOpenSidebarButton && isInCall && unreadMessagesCounter > 0"
 			class="unread-messages-counter"
 			:highlighted="hasUnreadMentions">
 			{{ unreadMessagesCounter }}
@@ -187,8 +168,8 @@ import ConversationIcon from '../ConversationIcon'
 import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip'
 import richEditor from '@nextcloud/vue/dist/Mixins/richEditor'
 import userStatus from '../../mixins/userStatus'
-import LocalMediaControls from '../CallView/shared/LocalMediaControls.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
+import LocalMediaControls from '../CallView/shared/LocalMediaControls'
+import Cog from 'vue-material-design-icons/Cog'
 import getParticipants from '../../mixins/getParticipants'
 
 export default {

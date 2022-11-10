@@ -36,12 +36,9 @@ use OCP\Migration\SimpleMigrationStep;
 use OCP\Migration\IOutput;
 
 class Version2001Date20170707115443 extends SimpleMigrationStep {
+	protected IDBConnection $db;
 
-	/** @var IDBConnection */
-	protected $db;
-
-	/** @var IConfig */
-	protected $config;
+	protected IConfig $config;
 
 	public function __construct(IDBConnection $db,
 								IConfig $config) {
@@ -136,7 +133,7 @@ class Version2001Date20170707115443 extends SimpleMigrationStep {
 				->where($update->expr()->in('roomId', $update->createNamedParameter($one2oneRooms, IQueryBuilder::PARAM_INT_ARRAY)));
 		}
 
-		return (int) $update->executeStatement();
+		return $update->executeStatement();
 	}
 
 	/**
@@ -160,6 +157,6 @@ class Version2001Date20170707115443 extends SimpleMigrationStep {
 			$update->andWhere($update->expr()->notIn('roomId', $update->createNamedParameter($one2oneRooms, IQueryBuilder::PARAM_INT_ARRAY)));
 		}
 
-		return (int) $update->executeStatement();
+		return $update->executeStatement();
 	}
 }

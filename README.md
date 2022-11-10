@@ -2,4 +2,4 @@
 
 This is a fork of [Nextcloud Talk](https://github.com/nextcloud/spreed)
 
-Based on version 13.0.9
+Based on version 14.0.6
