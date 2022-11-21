@@ -508,6 +508,7 @@ export default {
 	.cog-icon svg {
 		background-repeat: no-repeat;
 		width: 31px !important;
+		height: 27px !important;
 		background-image: url("../../../img/adminly-devices.svg");
 	}
 
