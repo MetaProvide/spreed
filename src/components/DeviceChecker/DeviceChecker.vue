@@ -390,6 +390,7 @@ export default {
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		gap: 0.75rem;
 	}
 }
 
@@ -450,60 +451,78 @@ export default {
 	display: flex;
 }
 
-.adminly-close-button {
-	margin-left: auto;
-	background-image: url("../../../img/close.svg");
-	background-position: center;
-	background-repeat: no-repeat;
-	padding-inline: 1rem !important;
-	background-color: white;
-	box-shadow: none;
-	border: none;
-}
-
-.material-design-icon svg {
-	color: transparent;
-	width: 30px;
-	height: 30px;
-}
-
-.material-design-icon {
-	background-repeat: no-repeat;
-	background-position: center;
-	background-size: contain;
-}
-
-.microphone-icon svg {
-	background-image: url("../../../img/adminly-microphone.svg");
-}
-
-.microphone-off-icon svg {
-	background-image: url("../../../img/adminly-microphone-mute.svg");
-}
-
-.video-icon svg {
-	background-image: url("../../../img/adminly-video.svg");
-}
-
-.video-off-icon svg {
-	background-image: url("../../../img/adminly-video-disabled.svg");
-}
-
-.blur-icon svg {
-	background-image: url("../../../img/adminly-background-blur.svg");
-}
-
-.blur-off-icon svg {
-	background-image: url("../../../img/adminly-background-blur-off.svg");
-}
-
-.cog-icon svg {
-	background-repeat: no-repeat;
-	width: 31px;
-	background-image: url("../../../img/adminly-devices.svg");
-}
-
 ::v-deep .modal-container {
 	display: flex !important;
+}
+</style>
+
+<style lang="scss">
+.device-checker {
+	.adminly-close-button {
+		margin-left: auto;
+		background-image: url("../../../img/close.svg");
+		background-position: center;
+		background-repeat: no-repeat;
+		padding-inline: 1rem !important;
+		background-color: white;
+		box-shadow: none;
+		border: none;
+	}
+
+	.material-design-icon:not(.checkbox-radio-switch__icon) svg {
+		color: transparent;
+		width: 30px;
+		height: 30px;
+	}
+
+	.material-design-icon {
+		background-repeat: no-repeat;
+		background-position: center;
+		background-size: contain;
+	}
+
+	.microphone-icon svg {
+		background-image: url("../../../img/adminly-microphone.svg");
+	}
+
+	.microphone-off-icon svg {
+		background-image: url("../../../img/adminly-microphone-mute.svg");
+	}
+
+	.video-icon svg {
+		background-image: url("../../../img/adminly-video.svg");
+	}
+
+	.video-off-icon svg {
+		background-image: url("../../../img/adminly-video-disabled.svg");
+	}
+
+	.blur-icon svg {
+		background-image: url("../../../img/adminly-background-blur.svg");
+	}
+
+	.blur-off-icon svg {
+		background-image: url("../../../img/adminly-background-blur-off.svg");
+	}
+
+	.cog-icon svg {
+		background-repeat: no-repeat;
+		width: 31px !important;
+		height: 27px !important;
+		background-image: url("../../../img/adminly-devices.svg");
+	}
+
+	.button-vue.select-devices .button-vue__icon{
+		margin-left: 0.5rem;
+	}
+
+	.button-vue.select-devices .button-vue__text{
+		margin-right: 0.5rem;
+		line-height: 2rem;
+	}
+
+	.button-vue.select-devices:hover .button-vue__text{
+		color: white;
+	}
 }
 </style>
