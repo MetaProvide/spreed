@@ -221,7 +221,7 @@ class Room {
 		$this->type = $type;
 		$this->readOnly = $readOnly;
 		$this->listable = $listable;
-		$this->lobbyState = $lobbyState;
+		$this->lobbyState = 0;
 		$this->sipEnabled = $sipEnabled;
 		$this->assignedSignalingServer = $assignedSignalingServer;
 		$this->token = $token;
@@ -261,7 +261,7 @@ class Room {
 
 	public function getLobbyState(): int {
 		$this->validateTimer();
-		return $this->lobbyState;
+		return 0;
 	}
 
 	public function getSIPEnabled(): int {
