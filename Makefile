@@ -24,7 +24,7 @@ composer-update:
 	composer update --prefer-dist
 
 npm-init:
-	npm ci
+	npm ci --force
 
 npm-update:
 	npm update
